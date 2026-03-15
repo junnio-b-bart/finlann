@@ -40,6 +40,9 @@ export default function Settings({
   const [modalConfirmPassword, setModalConfirmPassword] = useState("");
   const [modalError, setModalError] = useState("");
   const [modalPasswordStrength, setModalPasswordStrength] = useState("none"); // none | weak | medium | strong
+  const [modalThemeColor, setModalThemeColor] = useState("#3b82f6"); // cor base do pop-up de conta
+  const [modalShowCustomColor, setModalShowCustomColor] = useState(false);
+  const [modalCustomThemeColor, setModalCustomThemeColor] = useState(null);
 
   const loggedIn = googleSession.loggedIn;
   const user = googleSession.user;
@@ -361,7 +364,17 @@ export default function Settings({
 
       {accountModalMode && (
         <div className="finlann-overlay">
-          <div className="finlann-overlay__panel">
+          <div
+            className="finlann-overlay__panel"
+            style={
+              accountModalMode === "create"
+                ? {
+                    border: `2px solid ${modalThemeColor}`,
+                    backgroundImage: `linear-gradient(135deg, #020617 0%, #020617 20%, ${modalThemeColor}33 55%, ${modalThemeColor}80 100%)`,
+                  }
+                : undefined
+            }
+          >
             <header className="finlann-modal__header">
               <p className="finlann-modal__eyebrow">
                 {accountModalMode === "create" ? "Nova conta" : "Entrar em conta"}
@@ -522,6 +535,105 @@ export default function Settings({
                   onChange={(e) => setModalConfirmPassword(e.target.value)}
                 />
               </div>
+
+              {accountModalMode === "create" && (
+                <div style={{ marginBottom: 12 }}>
+                  <label
+                    className="finlann-settings-profile-subtitle"
+                    style={{ marginBottom: 4, display: "block" }}
+                  >
+                    CORES DA CONTA
+                  </label>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    {/* 4 cores fixas */}
+                    {["#3b82f6", "#8b5cf6", "#ec4899", "#22c55e"].map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => {
+                          setModalThemeColor(color);
+                          setModalShowCustomColor(false);
+                        }}
+                        style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: 999,
+                          border:
+                            modalThemeColor === color
+                              ? "2px solid #e5e7eb"
+                              : "1px solid #4b5563",
+                          backgroundColor: color,
+                          padding: 0,
+                          cursor: "pointer",
+                        }}
+                      />
+                    ))}
+
+                    {/* 5ª bolinha: cor customizada, se existir */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!modalCustomThemeColor) return;
+                        setModalThemeColor(modalCustomThemeColor);
+                        setModalShowCustomColor(false);
+                      }}
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: 999,
+                        border: modalCustomThemeColor
+                          ? "2px solid #e5e7eb"
+                          : "1px dashed #4b5563",
+                        backgroundColor: modalCustomThemeColor || "transparent",
+                        padding: 0,
+                        cursor: modalCustomThemeColor ? "pointer" : "default",
+                      }}
+                    />
+
+                    {/* 6ª bolinha: seletor customizado (arco-íris) */}
+                    <button
+                      type="button"
+                      onClick={() => setModalShowCustomColor((prev) => !prev)}
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 999,
+                        border: modalShowCustomColor
+                          ? "2px solid #e5e7eb"
+                          : "1px solid #4b5563",
+                        backgroundImage:
+                          "conic-gradient(from 180deg, #EF4444, #F97316, #FACC15, #22C55E, #0EA5E9, #6366F1, #EC4899, #EF4444)",
+                        padding: 0,
+                        cursor: "pointer",
+                      }}
+                    />
+                  </div>
+
+                  {modalShowCustomColor && (
+                    <div style={{ marginTop: 8 }}>
+                      <input
+                        type="color"
+                        value={modalThemeColor}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setModalThemeColor(value);
+                          // se não for uma das fixas, vira a cor custom da 5ª bolinha
+                          if (!['#3b82f6', '#8b5cf6', '#ec4899', '#22c55e'].includes(value)) {
+                            setModalCustomThemeColor(value);
+                          }
+                        }}
+                        style={{
+                          width: 40,
+                          height: 40,
+                          padding: 0,
+                          border: "none",
+                          borderRadius: 8,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               {modalError && (
                 <p
