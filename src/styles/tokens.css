@@ -1,0 +1,37 @@
+:root {
+  /* Cores principais */
+  --color-bg: #050816;
+  --color-bg-soft: #0b1020;
+  --color-card: #111827;
+
+  --color-text: #f9fafb;
+  --color-text-muted: #9ca3af;
+
+  --color-accent-blue: #2563eb;
+  --color-accent-green: #22c55e;
+  --color-accent-red: #ef4444;
+  --color-accent-yellow: #eab308;
+
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.45);
+  --shadow-subtle: 0 10px 30px rgba(0, 0, 0, 0.35);
+
+  /* espaçamentos ~30% maiores */
+  --spacing-xs: 5px;   /* antes 4px */
+  --spacing-sm: 10px;  /* antes 8px */
+  --spacing-md: 16px;  /* antes 12px */
+  --spacing-lg: 21px;  /* antes 16px */
+  --spacing-xl: 26px;  /* antes 20px */
+  --spacing-2xl: 31px; /* antes 24px */
+
+  /* tamanhos de fonte ~30% maiores que o padrão inicial */
+  --font-size-xs: 16px; /* antes 12px */
+  --font-size-sm: 18px; /* antes 14px */
+  --font-size-md: 21px; /* antes 16px */
+  --font-size-lg: 23px; /* antes 18px */
+  --font-size-xl: 29px; /* antes 22px */
+  --font-size-2xl: 34px; /* antes 26px */
+}

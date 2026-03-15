@@ -1,0 +1,937 @@
+.finlann-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1; /* ocupa a altura disponível entre topo e barra/botões */
+}
+
+/* área de conteúdo rolável no meio da página (resumo de entradas/saídas) */
+.finlann-dashboard__scroll {
+  flex: 1;
+  min-height: 0; /* libera o flexbox pra permitir scroll interno */
+  overflow-y: auto;
+  padding-right: 4px; /* espaço mínimo pra não colar na scrollbar */
+}
+
+.finlann-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.finlann-header--centered {
+  justify-content: center;
+}
+
+.finlann-header__left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.finlann-header__subtitle {
+  font-size: var(--font-size-lg); /* título forte do mês/ano, como h1 de página */
+  color: var(--color-text-muted);
+}
+
+.finlann-header__subtitle--clickable {
+  background: none;
+  border: none;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #e5e7eb;
+  cursor: pointer;
+}
+
+.finlann-header__subtitle--clickable:hover {
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.finlann-logo-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 24px;
+  background: transparent;
+}
+
+.finlann-logo-img {
+  height: 66px; /* ~50% maior */
+  width: auto;
+  display: block;
+}
+
+.finlann-header__chip {
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 6px 12px;
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.finlann-cards-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.finlann-card {
+  padding: 10px;
+  border-radius: 18px;
+  background: radial-gradient(circle at top, #020617, #020617 40%, #020617 100%);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Cardão da página de Cartões (Config) */
+.finlann-card--full {
+  border-radius: 20px;
+  padding: 12px;
+  color: #e5e7eb;
+}
+
+.finlann-card-full__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-xs);
+  opacity: 0.9;
+}
+
+.finlann-card-full__label {
+  font-weight: 500;
+}
+
+.finlann-card-full__counter {
+  font-variant-numeric: tabular-nums;
+}
+
+.finlann-card-full__body {
+  margin-top: 8px;
+}
+
+.finlann-card-full__name {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+.finlann-card-full__meta {
+  margin-top: 4px;
+  font-size: var(--font-size-xs);
+  opacity: 0.9;
+}
+
+.finlann-card-full__nav {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.finlann-card-full__nav button {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(15, 23, 42, 0.3);
+  color: #e5e7eb;
+}
+
+.finlann-card-summary {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.finlann-card-summary__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.finlann-card-summary__label {
+  font-size: var(--font-size-sm);
+}
+
+.finlann-card-summary__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.finlann-card-summary__value {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+.finlann-card-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.finlann-card__label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.finlann-card__value {
+  margin-top: 4px;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+.finlann-card__hint {
+  margin-top: 2px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.finlann-card--income .finlann-card__value {
+  color: var(--color-accent-green);
+}
+
+.finlann-card--expense .finlann-card__value {
+  color: var(--color-accent-red);
+}
+
+.finlann-card--balance .finlann-card__value {
+  color: var(--color-accent-yellow);
+}
+
+.finlann-section {
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at top left, #020617, #020617 40%, #020617 100%);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: var(--shadow-soft);
+}
+
+.finlann-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.finlann-section__title {
+  font-size: var(--font-size-md);
+}
+
+.finlann-section__tag {
+  font-size: var(--font-size-xs);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(30, 64, 175, 0.4);
+  color: #bfdbfe;
+}
+
+.finlann-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.finlann-list-item {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: none;
+  background: rgba(15, 23, 42, 0.9);
+  color: inherit;
+  text-align: left;
+}
+
+.finlann-list-item__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.finlann-list-item__avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.finlann-list-item__avatar--credit {
+  background: radial-gradient(circle at top left, #1d4ed8, #0f172a);
+}
+
+.finlann-list-item__avatar--debit {
+  background: radial-gradient(circle at top left, #22c55e, #064e3b);
+}
+
+.finlann-list-item__avatar--cash {
+  background: radial-gradient(circle at top left, #eab308, #713f12);
+}
+
+.finlann-list-item__avatar--income {
+  background: radial-gradient(circle at top left, #14b8a6, #022c22);
+}
+
+.finlann-list-item__avatar--expense {
+  background: radial-gradient(circle at top left, #b91c1c, #020617);
+}
+
+.finlann-list-item__title {
+  font-size: var(--font-size-sm);
+}
+
+.finlann-list-item__subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.finlann-list-item__value {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.finlann-list-item__value--negative {
+  color: var(--color-accent-red);
+}
+
+.finlann-list-item__value--positive {
+  color: var(--color-accent-green);
+}
+
+.finlann-actions {
+  /* botões fazem parte da "borda" fixa da página, acima da barra de menu */
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 80px; /* ficam um pouco acima da barra de menu fixa */
+  width: min(95vw, 960px);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  z-index: 25;
+}
+
+.finlann-action {
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  box-shadow: var(--shadow-soft);
+}
+
+.finlann-action--income {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: #ecfdf5;
+}
+
+.finlann-action--expense {
+  background: linear-gradient(135deg, #b91c1c, #ef4444);
+  color: #fef2f2;
+}
+
+.finlann-bottom-nav {
+  /* barra de menu global, sempre no footer da página (independente da tela) */
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 16px;
+  width: min(95vw, 960px);
+  border-radius: 999px;
+  padding: 6px;
+  background: rgba(15, 23, 42, 0.95);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  z-index: 30;
+}
+
+.finlann-bottom-nav__item {
+  flex: 1;
+  border-radius: 999px;
+  border: none;
+  padding: 6px 10px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.finlann-bottom-nav__item.is-active {
+  background: radial-gradient(circle at top, rgba(37, 99, 235, 0.45), rgba(15, 23, 42, 0.9));
+  color: #dbeafe;
+  box-shadow: var(--shadow-subtle);
+}
+
+.finlann-bottom-nav__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.7);
+}
+
+.finlann-bottom-nav__item.is-active .finlann-bottom-nav__dot {
+  background: #60a5fa;
+}
+
+.finlann-bottom-nav__label {
+  white-space: nowrap;
+}
+
+/* Overlay + modal */
+.finlann-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  z-index: 40;
+}
+
+.finlann-overlay__panel {
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 64px);
+  border-radius: 24px;
+  /* fundo mais sólido, sem deixar o conteúdo de trás "vazar" */
+  background: #020617;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: var(--shadow-soft);
+  padding: 16px 16px 12px;
+}
+
+.finlann-overlay__panel--expense {
+  border-color: #ef4444;
+}
+
+.finlann-overlay__panel--income {
+  border-color: #22c55e;
+}
+
+.finlann-modal__header {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* ocupa a largura toda do pop-up */
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.finlann-modal__eyebrow {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-align: left; /* alinhado à esquerda do pop-up */
+}
+
+.finlann-modal__title {
+  font-size: 20px; /* ligeiramente maior para dar mais peso */
+  font-weight: 600;
+  text-align: left; /* alinhado à esquerda do pop-up */
+}
+
+.finlann-modal__eyebrow {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.finlann-modal__title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+.finlann-modal__close {
+  border: none;
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--color-text-muted);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.finlann-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+/* corpo rolável para tabelas/listas longas */
+.finlann-modal__body--scroll {
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+}
+
+/* seletor de mês/ano estilo carrossel vertical */
+.finlann-monthpicker {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 24px; /* mais espaço entre as duas colunas */
+}
+
+.finlann-monthpicker__column {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+/* cada coluna um pouco mais larga para caber textos como "Fevereiro" sem estrangular */
+.finlann-monthpicker__wheel {
+  width: 130px; /* balãozinho um pouco mais largo */
+  max-height: 140px; /* ~4 itens visíveis: 2 acima, selecionado, 1 abaixo */
+  padding: 4px 0;
+  border-radius: 16px;
+  background: transparent;
+  overflow-y: auto;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+
+.finlann-monthpicker__wheel::-webkit-scrollbar {
+  display: none;
+}
+
+.finlann-monthpicker__item {
+  width: 100%;
+  padding: 0 12px;
+  height: 32px; /* IMPORTANT: bate com ITEM_HEIGHT no JS pra wheel travar certinho */
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: rgba(148, 163, 184, 0.4);
+  font-size: var(--font-size-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center; /* garante o texto exatamente no meio da pílula */
+  text-align: center;
+  transition: transform 120ms ease-out, color 120ms ease-out, background 120ms ease-out;
+}
+
+.finlann-monthpicker__item.is-near {
+  color: rgba(148, 163, 184, 0.7);
+  font-size: var(--font-size-sm);
+}
+
+.finlann-monthpicker__item.is-selected {
+  background: rgba(37, 99, 235, 0.5); /* azul mais escuro/sóbrio, sem ficar tão aceso */
+  color: #e5e7eb;
+  font-weight: 600;
+  font-size: var(--font-size-md); /* um pouco maior que o resto */
+  transform: scale(1.02); /* menos esticado pra manter o texto bem centralizado */
+  border-radius: 999px; /* bem redondinho, borda suave */
+}
+
+.finlann-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.finlann-field__label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.finlann-field__input {
+  width: 100%;
+  border-radius: 14px;
+  padding: 8px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.95);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+/* campo de valor maior e centralizado */
+.finlann-field--amount {
+  align-items: center;
+}
+
+.finlann-field--amount .finlann-field__label {
+  width: 100%;
+  max-width: 190px;
+}
+
+.finlann-field__input--amount {
+  text-align: center;
+  font-size: var(--font-size-lg);
+  max-width: 190px;
+}
+
+.finlann-field__input::placeholder {
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.finlann-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.finlann-chip {
+  border-radius: var(--radius-pill);
+  padding: 6px 10px;
+  font-size: var(--font-size-xs);
+  border: none;
+}
+
+.finlann-chip--outline {
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--color-text-muted);
+  border: 1px solid rgba(148, 163, 184, 0.5);
+}
+
+.finlann-chip--solid {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: #ecfdf5;
+}
+
+.finlann-chip--solid.finlann-chip--accent {
+  background: linear-gradient(
+    135deg,
+    var(--finlann-accent, #16a34a),
+    rgba(15, 23, 42, 0.95)
+  );
+}
+
+.finlann-chip.is-active {
+  box-shadow: var(--shadow-subtle);
+}
+
+.finlann-select select {
+  width: 100%;
+  border-radius: 14px;
+  padding: 8px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.95);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+/* linha de seleção de cartão + botão "+" */
+.finlann-card-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.finlann-select--compact select {
+  padding-right: 28px;
+}
+
+.finlann-card-add {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(15, 23, 42, 0.95);
+  color: #e5e7eb;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.finlann-card-add:hover {
+  background: rgba(30, 64, 175, 0.7);
+}
+
+.finlann-conditional {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.finlann-color-row {
+  display: flex;
+  gap: 8px;
+}
+
+.finlann-color-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+}
+
+.finlann-color-dot.is-active {
+  border-color: #e5e7eb;
+}
+
+.finlann-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.finlann-modal__secondary {
+  border-radius: var(--radius-pill);
+  padding: 8px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.finlann-modal__primary {
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  border: none;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #e5e7eb;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.finlann-modal__primary--success {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+}
+
+/* Toast / notificação inline no app */
+.finlann-toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.8);
+  color: #e5e7eb;
+  font-size: var(--font-size-sm);
+  box-shadow: var(--shadow-soft);
+  z-index: 999;
+  animation: finlann-toast-pop 2.4s ease-out forwards;
+}
+
+.finlann-toast--success {
+  border-color: rgba(34, 197, 94, 0.8);
+}
+
+.finlann-toast--error {
+  border-color: rgba(248, 113, 113, 0.9);
+}
+
+@keyframes finlann-toast-pop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px) scale(0.9);
+  }
+  15% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1.02);
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px) scale(0.96);
+  }
+}
+
+/* Tabelas de extrato (entradas e faturas) */
+.finlann-statement-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px; /* respiro entre o fim da tabela e os botões do rodapé do pop-up */
+}
+
+/* Seção de histórico: card com lista rolável, mas mantendo um gap seguro acima da barra de menu */
+.finlann-section--history {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 2px;     /* gap mínimo entre o fim do card e a barra de menu */
+}
+
+.finlann-section--history .finlann-section__scroll {
+  margin-top: 4px;
+  max-height: 750px;      /* card ocupa quase toda a altura útil antes de rolar por dentro */
+  overflow-y: auto;
+}
+
+.finlann-statement-row {
+  display: grid;
+  /* aumenta um pouco a coluna de parcelas e o espaçamento para afastar do valor */
+  grid-template-columns: 44px minmax(0, 1fr) 64px 72px;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 4px;
+  padding: 4px 6px;
+  font-size: var(--font-size-xs);
+}
+
+.finlann-statement-row--header {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+  margin-bottom: 2px;
+}
+
+.finlann-statement-desc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.finlann-value-cell {
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.finlann-value-prefix {
+  opacity: 0.8;
+}
+
+.finlann-value-number {
+  font-weight: 600;
+}
+
+/* Settings screen specific */
+.finlann-settings-profile-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.finlann-settings-avatar {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.finlann-settings-avatar__circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: radial-gradient(circle at top left, #1d4ed8, #0f172a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.finlann-settings-avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.finlann-settings-avatar__circle--large {
+  width: 52px;
+  height: 52px;
+}
+
+.finlann-settings-profile-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.finlann-settings-profile-name {
+  font-size: var(--font-size-sm);
+}
+
+.finlann-settings-profile-subtitle {
+  font-size: var(--font-size-xs);
+  color: #e5e7eb; /* letras mais claras para melhor contraste no fundo escuro */
+}
+
+.finlann-settings-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.finlann-settings-actions-row {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.finlann-settings-actions-bar {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.finlann-settings-actions-bar__left {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.finlann-google-mark {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+}
+
+.finlann-settings-actions-bar__right {
+  flex: 0 0 auto;
+}
+
+.finlann-settings-sync-button {
+  border-radius: 999px;
+  border: none;
+  width: 32px;
+  height: 32px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.finlann-settings-sync-button:hover {
+  background: rgba(37, 99, 235, 0.7);
+}
+
+.finlann-settings-notifications {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.finlann-settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: var(--font-size-sm);
+}
+
+.finlann-settings-toggle-row small {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}

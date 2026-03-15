@@ -1,0 +1,52 @@
+.finlann-monthpicker {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 24px; /* mais respiro entre coluna de mês e ano */
+}
+
+.finlann-monthpicker__column {
+  flex: 0 0 auto;
+}
+
+.finlann-monthpicker__wheel {
+  width: 110px; /* um pouco mais larga pra caber "Fevereiro" sem quebrar */
+  max-height: 144px;
+  padding: 4px 0;
+  border-radius: 16px;
+  background: transparent;
+  overflow-y: auto;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+
+.finlann-monthpicker__wheel::-webkit-scrollbar {
+  display: none;
+}
+
+.finlann-monthpicker__item {
+  width: 100%;
+  padding: 6px 8px;
+  height: 32px; /* bate com ITEM_HEIGHT no JS */
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: rgba(148, 163, 184, 0.4);
+  font-size: var(--font-size-xs);
+  text-align: center;
+  transition: transform 120ms ease-out, color 120ms ease-out, background 120ms ease-out;
+}
+
+.finlann-monthpicker__item.is-near {
+  color: rgba(148, 163, 184, 0.7);
+  font-size: var(--font-size-sm);
+}
+
+.finlann-monthpicker__item.is-selected {
+  background: rgba(37, 99, 235, 0.7);
+  color: #e5e7eb;
+  font-weight: 600;
+  font-size: var(--font-size-md);
+  transform: scale(1.05);
+}
