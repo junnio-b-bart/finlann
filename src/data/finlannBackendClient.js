@@ -51,23 +51,49 @@ return normalizeState(data.state);
 }
 
 export async function saveStateToBackend(financeState, householdId) {
-if (!supabase) return;
+  if (!supabase) return;
 
-const stateToSave = exportState(financeState);
-const effectiveId = householdId || getCurrentHouseholdId();
+  const stateToSave = exportState(financeState);
+  const effectiveId = householdId || getCurrentHouseholdId();
 
-const { error } = await supabase.from("finlann_state").upsert(
-{
-id: effectiveId,
-state: stateToSave,
-},
-{ onConflict: "id" }
-);
+  const { error } = await supabase.from("finlann_state").upsert(
+    {
+      id: effectiveId,
+      state: stateToSave,
+    },
+    { onConflict: "id" }
+  );
 
-if (error) {
-console.error("[Finlann] Erro ao salvar estado no backend:", error);
-throw error;
+  if (error) {
+    console.error("[Finlann] Erro ao salvar estado no backend:", error);
+    throw error;
+  }
+
+  return normalizeState(stateToSave);
 }
 
-return normalizeState(stateToSave);
+export async function createAccount(profile) {
+  if (!supabase) {
+    throw new Error("Supabase não configurado");
+  }
+
+  const { data, error } = await supabase
+    .from("finlann_accounts")
+    .insert(profile)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[Finlann] Erro ao criar conta:", error);
+    console.error("[Finlann] Detalhes do erro ao criar conta:", {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      status: error.status,
+    });
+    throw error;
+  }
+
+  return data;
 }

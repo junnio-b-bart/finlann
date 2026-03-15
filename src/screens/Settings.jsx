@@ -6,6 +6,7 @@ import "../styles/finlann.css";
 import { exportState, normalizeState } from "../data/finance.sync.js";
 import googleLogo from "../assets/Google_G_logo.png";
 import { isGoogleConfigured, isLoggedInToGoogle, getCurrentGoogleUser, loginWithGoogle, logoutFromGoogle, syncWithGoogleDrive, loadRemoteStateFromDrive } from "../data/googleDriveClient.js";
+import { createAccount } from "../data/finlannBackendClient.js";
 import SettingsCards from "./SettingsCards.jsx";
 import SettingsNotifications from "./SettingsNotifications.jsx";
 
@@ -37,9 +38,34 @@ export default function Settings({
   const [modalFirstName, setModalFirstName] = useState("");
   const [modalLastName, setModalLastName] = useState("");
   const [modalUser, setModalUser] = useState("");
+
+  // Conta Finlann logada (MVP: assume logado após criar conta)
+  const [currentAccount, setCurrentAccount] = useState(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem("finlann.currentAccount");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  function setAndPersistCurrentAccount(account) {
+    setCurrentAccount(account);
+    if (typeof window === "undefined" || !account) return;
+    try {
+      window.localStorage.setItem("finlann.currentAccount", JSON.stringify(account));
+      // também amarra o householdId desta conta
+      if (account.user_id) {
+        window.localStorage.setItem("finlann.householdId", account.user_id);
+      }
+    } catch {
+      // ignore
+    }
+  }
   const [modalPassword, setModalPassword] = useState("");
   const [modalConfirmPassword, setModalConfirmPassword] = useState("");
-  const [modalHasPassword, setModalHasPassword] = useState(true);
+  const [modalHasPassword, setModalHasPassword] = useState(false);
   const [modalError, setModalError] = useState("");
   const [modalPasswordStrength, setModalPasswordStrength] = useState("none"); // none | weak | medium | strong
   const [modalThemeColor, setModalThemeColor] = useState("#3b82f6"); // cor base do pop-up de conta
@@ -224,9 +250,13 @@ export default function Settings({
           </div>
 
           <div className="finlann-settings-profile-text">
-            <p className="finlann-settings-profile-name">Finlann</p>
+            <p className="finlann-settings-profile-name">
+              Finlann{currentAccount ? ` — ${currentAccount.first_name || currentAccount.user_id}` : ""}
+            </p>
             <p className="finlann-settings-profile-subtitle">
-              Abra ou acesse uma conta Finlann para sincronizar seus dados.
+              {currentAccount
+                ? `Conectado como ${currentAccount.user_id}.`
+                : "Abra ou acesse uma conta Finlann para sincronizar seus dados."}
             </p>
           </div>
         </div>
@@ -387,13 +417,8 @@ export default function Settings({
             }
           >
             <header className="finlann-modal__header">
-              <p className="finlann-modal__eyebrow">
-                {accountModalMode === "create" ? "Nova conta" : "Entrar em conta"}
-              </p>
               <h2 className="finlann-modal__title">
-                {accountModalMode === "create"
-                  ? "Criar conta Finlann"
-                  : "Fazer login na conta Finlann"}
+                {accountModalMode === "create" ? "Nova conta" : "Fazer login na conta Finlann"}
               </h2>
             </header>
 
@@ -731,7 +756,7 @@ export default function Settings({
                   <button
                     type="button"
                     className="finlann-chip finlann-chip--solid finlann-chip--accent"
-                    onClick={() => {
+                    onClick={async () => {
                       // zera flags
                       setModalEmailError(false);
                       setModalFirstNameError(false);
@@ -785,8 +810,24 @@ export default function Settings({
                         return;
                       }
 
-                      // salvamento real virá depois; por enquanto só fecha
-                      closeAccountModal();
+                      try {
+                        const account = await createAccount({
+                          user_id: modalUser,
+                          email: modalEmail,
+                          first_name: modalFirstName,
+                          last_name: modalLastName,
+                          has_password: modalHasPassword,
+                          password: modalHasPassword ? modalPassword : null,
+                          theme_color: modalThemeColor,
+                        });
+                        setAndPersistCurrentAccount(account);
+                        closeAccountModal();
+                      } catch (err) {
+                        console.error(err);
+                        setModalError(
+                          "Não foi possível criar a conta agora. Tente novamente."
+                        );
+                      }
                     }}
                   >
                     Criar conta
