@@ -33,6 +33,7 @@ export default function Settings({
 
   // Modal de conta Finlann
   const [accountModalMode, setAccountModalMode] = useState(null); // "create" | "login" | null
+  const [modalEmail, setModalEmail] = useState("");
   const [modalFirstName, setModalFirstName] = useState("");
   const [modalLastName, setModalLastName] = useState("");
   const [modalUser, setModalUser] = useState("");
@@ -43,6 +44,13 @@ export default function Settings({
   const [modalThemeColor, setModalThemeColor] = useState("#3b82f6"); // cor base do pop-up de conta
   const [modalShowCustomColor, setModalShowCustomColor] = useState(false);
   const [modalCustomThemeColor, setModalCustomThemeColor] = useState(null);
+
+  const [modalEmailError, setModalEmailError] = useState(false);
+  const [modalFirstNameError, setModalFirstNameError] = useState(false);
+  const [modalLastNameError, setModalLastNameError] = useState(false);
+  const [modalUserError, setModalUserError] = useState(false);
+  const [modalPasswordErrorFlag, setModalPasswordErrorFlag] = useState(false);
+  const [modalConfirmPasswordError, setModalConfirmPasswordError] = useState(false);
 
   const loggedIn = googleSession.loggedIn;
   const user = googleSession.user;
@@ -157,6 +165,7 @@ export default function Settings({
 
   function openAccountModal(mode) {
     setAccountModalMode(mode);
+    setModalEmail("");
     setModalFirstName("");
     setModalLastName("");
     setModalUser("");
@@ -167,6 +176,7 @@ export default function Settings({
 
   function closeAccountModal() {
     setAccountModalMode(null);
+    setModalEmail("");
     setModalFirstName("");
     setModalLastName("");
     setModalUser("");
@@ -389,6 +399,25 @@ export default function Settings({
             <div className="finlann-modal__body">
               {accountModalMode === "create" && (
                 <>
+                  <div style={{ marginBottom: 12 }}>
+                    <label
+                      className="finlann-settings-profile-subtitle"
+                      style={{ marginBottom: 4, display: "block" }}
+                    >
+                      E-MAIL
+                      {modalEmailError && (
+                        <span style={{ color: "#ef4444", marginLeft: 4 }}>*</span>
+                      )}
+                    </label>
+                    <input
+                      type="email"
+                      className="finlann-field__input"
+                      placeholder="seu@email.com"
+                      value={modalEmail}
+                      onChange={(e) => setModalEmail(e.target.value)}
+                    />
+                  </div>
+
                   <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                     <div style={{ flex: 1 }}>
                       <label
@@ -396,6 +425,9 @@ export default function Settings({
                         style={{ marginBottom: 4, display: "block" }}
                       >
                         NOME
+                        {modalFirstNameError && (
+                          <span style={{ color: "#ef4444", marginLeft: 4 }}>*</span>
+                        )}
                       </label>
                       <input
                         type="text"
@@ -411,6 +443,9 @@ export default function Settings({
                         style={{ marginBottom: 4, display: "block" }}
                       >
                         SOBRENOME
+                        {modalLastNameError && (
+                          <span style={{ color: "#ef4444", marginLeft: 4 }}>*</span>
+                        )}
                       </label>
                       <input
                         type="text"
@@ -430,6 +465,9 @@ export default function Settings({
                   style={{ marginBottom: 4, display: "block" }}
                 >
                   USUÁRIO
+                  {modalUserError && (
+                    <span style={{ color: "#ef4444", marginLeft: 4 }}>*</span>
+                  )}
                 </label>
                 <input
                   type="text"
@@ -446,6 +484,9 @@ export default function Settings({
                   style={{ marginBottom: 4, display: "block" }}
                 >
                   SENHA
+                  {modalPasswordErrorFlag && (
+                    <span style={{ color: "#ef4444", marginLeft: 4 }}>*</span>
+                  )}
                 </label>
                 <input
                   type="password"
@@ -526,6 +567,9 @@ export default function Settings({
                   style={{ marginBottom: 4, display: "block" }}
                 >
                   CONFIRMAR SENHA
+                  {modalConfirmPasswordError && (
+                    <span style={{ color: "#ef4444", marginLeft: 4 }}>*</span>
+                  )}
                 </label>
                 <input
                   type="password"
@@ -659,13 +703,49 @@ export default function Settings({
                     type="button"
                     className="finlann-chip finlann-chip--solid finlann-chip--accent"
                     onClick={() => {
-                      if (!modalUser || !modalPassword || !modalConfirmPassword) {
-                        setModalError("Preencha usuário, senha e confirmação.");
-                        return;
+                      // zera flags
+                      setModalEmailError(false);
+                      setModalFirstNameError(false);
+                      setModalLastNameError(false);
+                      setModalUserError(false);
+                      setModalPasswordErrorFlag(false);
+                      setModalConfirmPasswordError(false);
+                      setModalError("");
+
+                      let hasError = false;
+
+                      if (!modalEmail || !modalEmail.includes("@")) {
+                        setModalEmailError(true);
+                        hasError = true;
+                      }
+                      if (!modalFirstName) {
+                        setModalFirstNameError(true);
+                        hasError = true;
+                      }
+                      if (!modalLastName) {
+                        setModalLastNameError(true);
+                        hasError = true;
+                      }
+                      if (!modalUser) {
+                        setModalUserError(true);
+                        hasError = true;
+                      }
+                      if (!modalPassword) {
+                        setModalPasswordErrorFlag(true);
+                        hasError = true;
+                      }
+                      if (!modalConfirmPassword) {
+                        setModalConfirmPasswordError(true);
+                        hasError = true;
                       }
 
-                      if (modalPassword !== modalConfirmPassword) {
+                      if (modalPassword && modalConfirmPassword && modalPassword !== modalConfirmPassword) {
+                        setModalConfirmPasswordError(true);
                         setModalError("As senhas não coincidem.");
+                        hasError = true;
+                      }
+
+                      if (hasError) {
                         return;
                       }
 
