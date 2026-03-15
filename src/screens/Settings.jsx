@@ -39,6 +39,7 @@ export default function Settings({
   const [modalUser, setModalUser] = useState("");
   const [modalPassword, setModalPassword] = useState("");
   const [modalConfirmPassword, setModalConfirmPassword] = useState("");
+  const [modalHasPassword, setModalHasPassword] = useState(true);
   const [modalError, setModalError] = useState("");
   const [modalPasswordStrength, setModalPasswordStrength] = useState("none"); // none | weak | medium | strong
   const [modalThemeColor, setModalThemeColor] = useState("#3b82f6"); // cor base do pop-up de conta
@@ -483,102 +484,130 @@ export default function Settings({
                   className="finlann-settings-profile-subtitle"
                   style={{ marginBottom: 4, display: "block" }}
                 >
+                  <input
+                    type="checkbox"
+                    checked={modalHasPassword}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setModalHasPassword(checked);
+                      if (!checked) {
+                        setModalPassword("");
+                        setModalConfirmPassword("");
+                        setModalPasswordStrength("none");
+                        setModalPasswordErrorFlag(false);
+                        setModalConfirmPasswordError(false);
+                      }
+                    }}
+                    style={{
+                      width: 16,
+                      height: 16,
+                      marginRight: 8,
+                      verticalAlign: "middle",
+                    }}
+                  />
                   SENHA
-                  {modalPasswordErrorFlag && (
+                  {modalHasPassword && modalPasswordErrorFlag && (
                     <span style={{ color: "#ef4444", marginLeft: 4 }}>*</span>
                   )}
                 </label>
-                <input
-                  type="password"
-                  className="finlann-field__input"
-                  placeholder="Senha"
-                  value={modalPassword}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setModalPassword(value);
-                    const len = value.length;
-                    let strength = "none";
-                    if (len > 0 && len <= 4) strength = "weak";
-                    else if (len >= 5 && len <= 7) strength = "medium";
-                    else if (len >= 8) strength = "strong";
-                    setModalPasswordStrength(strength);
-                    setModalError("");
-                  }}
-                />
 
-                {/* Força da senha (só na criação) */}
-                {accountModalMode === "create" && (
-                  <div style={{ marginTop: 8 }}>
-                    <div style={{ display: "flex", gap: 4, marginBottom: 2, width: "75%", maxWidth: 195 }}>
-                      {[0, 1, 2].map((index) => {
-                        let active = false;
-                        if (modalPasswordStrength === "weak") active = index === 0;
-                        if (modalPasswordStrength === "medium") active = index <= 1;
-                        if (modalPasswordStrength === "strong") active = index <= 2;
+                {modalHasPassword && (
+                  <>
+                    <input
+                      type="password"
+                      className="finlann-field__input"
+                      placeholder="Senha"
+                      value={modalPassword}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setModalPassword(value);
+                        const len = value.length;
+                        let strength = "none";
+                        if (len > 0 && len <= 4) strength = "weak";
+                        else if (len >= 5 && len <= 7) strength = "medium";
+                        else if (len >= 8) strength = "strong";
+                        setModalPasswordStrength(strength);
+                        setModalError("");
+                      }}
+                    />
 
-                        let color = "#E5E7EB";
-                        if (active) {
-                          if (modalPasswordStrength === "weak") color = "#b91c1c";
-                          if (modalPasswordStrength === "medium") color = "#f59e0b";
-                          if (modalPasswordStrength === "strong") color = "#16a34a";
-                        }
+                    {/* Força da senha (só na criação) */}
+                    {accountModalMode === "create" && (
+                      <div style={{ marginTop: 8 }}>
+                        <div style={{ display: "flex", gap: 4, marginBottom: 2, width: "75%", maxWidth: 195 }}>
+                          {[0, 1, 2].map((index) => {
+                            let active = false;
+                            if (modalPasswordStrength === "weak") active = index === 0;
+                            if (modalPasswordStrength === "medium") active = index <= 1;
+                            if (modalPasswordStrength === "strong") active = index <= 2;
 
-                        return (
-                          <div
-                            key={index}
+                            let color = "#E5E7EB";
+                            if (active) {
+                              if (modalPasswordStrength === "weak") color = "#b91c1c";
+                              if (modalPasswordStrength === "medium") color = "#f59e0b";
+                              if (modalPasswordStrength === "strong") color = "#16a34a";
+                            }
+
+                            return (
+                              <div
+                                key={index}
+                                style={{
+                                  flex: 1,
+                                  height: 6,
+                                  borderRadius: 999,
+                                  backgroundColor: color,
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
+                        {modalPasswordStrength !== "none" && (
+                          <p
+                            className="finlann-settings-profile-subtitle"
                             style={{
-                              flex: 1,
-                              height: 6,
-                              borderRadius: 999,
-                              backgroundColor: color,
+                              fontSize: 12,
+                              color:
+                                modalPasswordStrength === "weak"
+                                  ? "#b91c1c"
+                                  : modalPasswordStrength === "medium"
+                                  ? "#b45309"
+                                  : "#15803d",
                             }}
-                          />
-                        );
-                      })}
-                    </div>
-                    {modalPasswordStrength !== "none" && (
-                      <p
-                        className="finlann-settings-profile-subtitle"
-                        style={{
-                          fontSize: 12,
-                          color:
-                            modalPasswordStrength === "weak"
-                              ? "#b91c1c"
-                              : modalPasswordStrength === "medium"
-                              ? "#b45309"
-                              : "#15803d",
-                        }}
-                      >
-                        {modalPasswordStrength === "weak" && "Senha fraca"}
-                        {modalPasswordStrength === "medium" && "Senha média"}
-                        {modalPasswordStrength === "strong" && "Senha forte"}
-                      </p>
+                          >
+                            {modalPasswordStrength === "weak" && "Senha fraca"}
+                            {modalPasswordStrength === "medium" && "Senha média"}
+                            {modalPasswordStrength === "strong" && "Senha forte"}
+                          </p>
+                        )}
+                        <p className="finlann-settings-profile-subtitle" style={{ fontSize: 12, marginTop: 8 }}>
+                          Requisitos: pelo menos 8 caracteres, com pelo menos uma letra e um número.
+                        </p>
+                      </div>
                     )}
-                    <p className="finlann-settings-profile-subtitle" style={{ fontSize: 12, marginTop: 8 }}>
-                      Requisitos: pelo menos 8 caracteres, com pelo menos uma letra e um número.
-                    </p>
-                  </div>
+                  </>
                 )}
               </div>
 
-              <div style={{ marginBottom: 12 }}>
-                <label
-                  className="finlann-settings-profile-subtitle"
-                  style={{ marginBottom: 4, display: "block" }}
-                >
-                  CONFIRMAR SENHA
-                  {modalConfirmPasswordError && (
-                    <span style={{ color: "#ef4444", marginLeft: 4 }}>*</span>
-                  )}
-                </label>
-                <input
-                  type="password"
-                  className="finlann-field__input"
-                  placeholder="Repita a senha"
-                  value={modalConfirmPassword}
-                  onChange={(e) => setModalConfirmPassword(e.target.value)}
-                />
-              </div>
+              {modalHasPassword && (
+                <div style={{ marginBottom: 12 }}>
+                  <label
+                    className="finlann-settings-profile-subtitle"
+                    style={{ marginBottom: 4, display: "block" }}
+                  >
+                    CONFIRMAR SENHA
+                    {modalConfirmPasswordError && (
+                      <span style={{ color: "#ef4444", marginLeft: 4 }}>*</span>
+                    )}
+                  </label>
+                  <input
+                    type="password"
+                    className="finlann-field__input"
+                    placeholder="Repita a senha"
+                    value={modalConfirmPassword}
+                    onChange={(e) => setModalConfirmPassword(e.target.value)}
+                  />
+                </div>
+              )}
 
               {accountModalMode === "create" && (
                 <div style={{ marginBottom: 12 }}>
@@ -730,19 +759,26 @@ export default function Settings({
                         setModalUserError(true);
                         hasError = true;
                       }
-                      if (!modalPassword) {
-                        setModalPasswordErrorFlag(true);
-                        hasError = true;
-                      }
-                      if (!modalConfirmPassword) {
-                        setModalConfirmPasswordError(true);
-                        hasError = true;
-                      }
 
-                      if (modalPassword && modalConfirmPassword && modalPassword !== modalConfirmPassword) {
-                        setModalConfirmPasswordError(true);
-                        setModalError("As senhas não coincidem.");
-                        hasError = true;
+                      if (modalHasPassword) {
+                        if (!modalPassword) {
+                          setModalPasswordErrorFlag(true);
+                          hasError = true;
+                        }
+                        if (!modalConfirmPassword) {
+                          setModalConfirmPasswordError(true);
+                          hasError = true;
+                        }
+
+                        if (
+                          modalPassword &&
+                          modalConfirmPassword &&
+                          modalPassword !== modalConfirmPassword
+                        ) {
+                          setModalConfirmPasswordError(true);
+                          setModalError("As senhas não coincidem.");
+                          hasError = true;
+                        }
                       }
 
                       if (hasError) {
