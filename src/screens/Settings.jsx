@@ -301,32 +301,39 @@ export default function Settings({
             </div>
           )}
 
-          <button
-            type="button"
-            className="finlann-chip finlann-chip--outline finlann-settings-actions-bar__left"
-            style={{
-              width: 260,
-              borderColor: currentAccount ? "#f97373" : undefined,
-              color: currentAccount ? "#f97373" : undefined,
-            }}
-            onClick={() => {
-              if (currentAccount) {
-                setShowLogoutConfirm(true);
-              } else {
-                openAccountModal("login");
-              }
-            }}
-          >
-            {currentAccount ? "Sair da conta" : "Entrar"}
-          </button>
-          {!currentAccount && (
+          {!currentAccount ? (
+            <div className="finlann-settings-actions-row" style={{ width: "100%", maxWidth: 520, gap: 8 }}>
+              <button
+                type="button"
+                className="finlann-chip finlann-chip--outline"
+                style={{ flex: 1 }}
+                onClick={() => openAccountModal("login")}
+              >
+                Entrar
+              </button>
+              <button
+                type="button"
+                className="finlann-chip finlann-chip--outline"
+                style={{ flex: 1 }}
+                onClick={() => openAccountModal("create")}
+              >
+                Criar conta
+              </button>
+            </div>
+          ) : (
             <button
               type="button"
-              className="finlann-chip finlann-chip--outline finlann-settings-actions-bar__right"
-              style={{ flex: 0.4 }}
-              onClick={() => openAccountModal("create")}
+              className="finlann-chip finlann-chip--outline finlann-settings-actions-bar__left"
+              style={{
+                width: 260,
+                borderColor: "#f97373",
+                color: "#f97373",
+              }}
+              onClick={() => {
+                setShowLogoutConfirm(true);
+              }}
             >
-              Criar conta
+              Sair da conta
             </button>
           )}
         </div>
@@ -959,49 +966,6 @@ export default function Settings({
         </div>
       )}
 
-      {showLogoutConfirm && (
-        <div className="finlann-overlay">
-          <div className="finlann-overlay__panel">
-            <header className="finlann-modal__header">
-              <p className="finlann-modal__eyebrow">Conta Finlann</p>
-              <h2 className="finlann-modal__title">Sair da conta</h2>
-            </header>
-            <div className="finlann-modal__body">
-              <p className="finlann-settings-profile-subtitle">
-                Deseja sair da conta Finlann atual?
-              </p>
-            </div>
-            <div className="finlann-settings-actions" style={{ marginTop: 8 }}>
-              <div className="finlann-settings-actions-row">
-                <button
-                  type="button"
-                  className="finlann-chip finlann-chip--outline"
-                  onClick={() => setShowLogoutConfirm(false)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="finlann-chip finlann-chip--solid finlann-chip--accent"
-                  onClick={() => {
-                    setShowLogoutConfirm(false);
-                    setAndPersistCurrentAccount(null);
-                    try {
-                      if (typeof window !== "undefined") {
-                        window.localStorage.removeItem("finlann.currentAccount");
-                        window.localStorage.removeItem("finlann.householdId");
-                      }
-                    } catch {}
-                  }}
-                >
-                  Sair da conta
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {accountConflict && (
         <div className="finlann-overlay">
           <div className="finlann-overlay__panel">
@@ -1047,6 +1011,51 @@ export default function Settings({
                   }}
                 >
                   Usar dados deste dispositivo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLogoutConfirm && (
+        <div className="finlann-overlay">
+          <div className="finlann-overlay__panel">
+            <header className="finlann-modal__header">
+              <p className="finlann-modal__eyebrow">Conta Finlann</p>
+              <h2 className="finlann-modal__title">Sair da conta</h2>
+            </header>
+            <div className="finlann-modal__body">
+              <p className="finlann-settings-profile-subtitle">
+                Deseja sair da conta Finlann atual?
+              </p>
+            </div>
+            <div className="finlann-settings-actions" style={{ marginTop: 8 }}>
+              <div className="finlann-settings-actions-row">
+                <button
+                  type="button"
+                  className="finlann-chip finlann-chip--outline"
+                  onClick={() => setShowLogoutConfirm(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="finlann-chip finlann-chip--solid finlann-chip--accent"
+                  onClick={() => {
+                    setShowLogoutConfirm(false);
+                    onResetState?.();
+                    setAndPersistCurrentAccount(null);
+                    try {
+                      if (typeof window !== "undefined") {
+                        window.localStorage.removeItem("finlann.currentAccount");
+                        window.localStorage.removeItem("finlann.householdId");
+                        window.localStorage.removeItem("finlann-state-v1");
+                      }
+                    } catch {}
+                  }}
+                >
+                  Sair da conta
                 </button>
               </div>
             </div>
