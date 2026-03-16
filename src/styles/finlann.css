@@ -83,6 +83,39 @@
   gap: 10px;
 }
 
+@media (max-width: 768px) {
+  /* Cards principais: Entradas / Saídas lado a lado, Saldo embaixo centralizado */
+  .finlann-cards-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .finlann-card--balance {
+    grid-column: 1 / -1;
+    max-width: 320px; /* balão de saldo mais largo no mobile */
+    justify-self: center;
+  }
+
+  .finlann-card {
+    padding: 14px; /* baloes de entrada/saída um pouco mais "gordinhos" no mobile */
+  }
+
+  .finlann-section {
+    padding: 10px;
+  }
+
+  .finlann-section__header {
+    align-items: flex-start;
+  }
+
+  .finlann-section__title {
+    font-size: var(--font-size-md);
+  }
+
+  .finlann-header--centered .finlann-section__title {
+    font-size: var(--font-size-lg);
+  }
+}
+
 .finlann-card {
   padding: 10px;
   border-radius: 18px;
@@ -321,7 +354,7 @@
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 80px; /* ficam um pouco acima da barra de menu fixa */
+  bottom: 96px; /* um pouco mais distantes da barra de menu fixa */
   width: min(95vw, 960px);
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -365,6 +398,13 @@
   z-index: 30;
 }
 
+@media (max-width: 768px) {
+  .finlann-actions,
+  .finlann-bottom-nav {
+    width: 88vw; /* deixa ~6vw de respiro em cada lado no mobile */
+  }
+}
+
 .finlann-bottom-nav__item {
   flex: 1;
   border-radius: 999px;
@@ -374,9 +414,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
+}
+
+.finlann-bottom-nav__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
 }
 
 .finlann-bottom-nav__item.is-active {
@@ -385,19 +432,24 @@
   box-shadow: var(--shadow-subtle);
 }
 
-.finlann-bottom-nav__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.7);
-}
-
-.finlann-bottom-nav__item.is-active .finlann-bottom-nav__dot {
-  background: #60a5fa;
-}
-
 .finlann-bottom-nav__label {
   white-space: nowrap;
+  font-size: var(--font-size-xs);
+}
+
+.finlann-bottom-nav__icon {
+  width: 28px;
+  height: 28px;
+  display: block;
+  filter: grayscale(1) brightness(0.9) opacity(0.8);
+}
+
+.finlann-bottom-nav__item.is-active .finlann-bottom-nav__icon {
+  filter: none; /* ativa cor cheia no ícone selecionado */
+}
+
+.finlann-bottom-nav__item.is-active .finlann-bottom-nav__label {
+  color: #60a5fa;
 }
 
 /* Overlay + modal */

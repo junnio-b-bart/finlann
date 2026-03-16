@@ -1,10 +1,13 @@
 import "../styles/globals.css";
 import "../styles/tokens.css";
+import resumoIcon from "../assets/resumo.png";
+import lancamentosIcon from "../assets/lancamentos.png";
+import configuracoesIcon from "../assets/configuracoes.png";
 
 const items = [
-  { id: "overview", label: "Resumo" },
-  { id: "history", label: "Lançamentos" },
-  { id: "settings", label: "Config" },
+  { id: "overview", label: "Resumo", icon: resumoIcon },
+  { id: "history", label: "Lançamentos", icon: lancamentosIcon },
+  { id: "settings", label: "Configurações", icon: configuracoesIcon },
 ];
 
 export default function BottomNav({ current = "overview", onChange }) {
@@ -19,8 +22,14 @@ export default function BottomNav({ current = "overview", onChange }) {
             className={"finlann-bottom-nav__item" + (active ? " is-active" : "")}
             onClick={() => onChange?.(item.id)}
           >
-            <span className="finlann-bottom-nav__dot" aria-hidden="true" />
-            <span className="finlann-bottom-nav__label">{item.label}</span>
+            <div className="finlann-bottom-nav__content">
+              <img
+                src={item.icon}
+                alt={item.label}
+                className="finlann-bottom-nav__icon"
+              />
+              <span className="finlann-bottom-nav__label">{item.label}</span>
+            </div>
           </button>
         );
       })}
