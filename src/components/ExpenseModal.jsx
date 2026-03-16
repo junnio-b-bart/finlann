@@ -39,6 +39,7 @@ export default function ExpenseModal({
   const [showCardModal, setShowCardModal] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState(lastUsedCardId || "");
   const [selectedInstallment, setSelectedInstallment] = useState("vista");
+  const [isFixed, setIsFixed] = useState(false);
 
   const creditCards = (existingCards || []).filter(
     (c) => !c.kind || c.kind === "credit"
@@ -172,6 +173,7 @@ export default function ExpenseModal({
       amount: numericAmount,
       method: paymentType, // credit, debit, pix, cash
       cardId: isCredit ? (lockCardId || selectedCardId || null) : null,
+      isFixed,
 
       // novo modelo de parcelado
       totalInstallments,
@@ -337,6 +339,18 @@ export default function ExpenseModal({
                 );
               })}
             </div>
+          </div>
+
+          <div className="finlann-field finlann-field--inline">
+            <label className="finlann-field__label">Despesa fixa</label>
+            <label className="finlann-field__switch-label">
+              <input
+                type="checkbox"
+                checked={isFixed}
+                onChange={(e) => setIsFixed(e.target.checked)}
+              />
+              <span>Marcar como gasto fixo (todo mês)</span>
+            </label>
           </div>
 
           {showCreditFields && (

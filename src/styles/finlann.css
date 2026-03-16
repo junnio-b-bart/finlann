@@ -32,6 +32,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  align-items: center; /* centraliza logo + mês/ano embaixo dela */
 }
 
 .finlann-header__subtitle {
@@ -79,24 +80,73 @@
 
 .finlann-cards-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: auto auto; /* só duas colunas: Entradas e Saídas lado a lado */
+  justify-content: center; /* centraliza o par de balões */
+  row-gap: 8px; /* espaço entre a linha de cima e o saldo */
+  column-gap: 0; /* distancia controlada por margin dos cards */
+}
+
+/* Em telas maiores, ajusta os balões de resumo geral */
+@media (min-width: 769px) {
+  .finlann-card--income,
+  .finlann-card--expense {
+    max-width: 200px; /* balões um pouco menores */
+  }
+
+  /* 1px de distância visual entre Entradas e Saídas */
+  .finlann-card--income {
+    margin-right: 1px;
+  }
+
+  .finlann-card--expense {
+    margin-left: 1px;
+  }
+
+  .finlann-card--balance {
+    max-width: 260px; /* saldo maior que entradas/saídas */
+    grid-column: 1 / -1; /* sempre na linha de baixo, centralizado */
+    justify-self: center;
+  }
 }
 
 @media (max-width: 768px) {
   /* Cards principais: Entradas / Saídas lado a lado, Saldo embaixo centralizado */
   .finlann-cards-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: auto auto; /* duas colunas: Entradas e Saídas */
+    justify-content: center;          /* grupo centralizado no miolo */
+    column-gap: 4px;                  /* espaçamento fixo entre os dois balões */
+    row-gap: 8px;                     /* distância até o saldo embaixo */
   }
 
+  /* Entradas/Saídas com mesma largura no mobile (um pouco mais estreitos) */
+  .finlann-card--income,
+  .finlann-card--expense {
+    width: 200px;
+    max-width: 200px;
+  }
+
+  /* margens assimétricas para manter o gap do meio e aumentar laterais */
+  .finlann-card--income {
+    margin-left: 12px; /* margem externa esquerda maior */
+    margin-right: 2px; /* lado do meio menor */
+  }
+
+  .finlann-card--expense {
+    margin-left: 2px;  /* lado do meio menor */
+    margin-right: 12px; /* margem externa direita maior */
+  }
+
+  /* Saldo com mesma altura e um pouco mais largo, na linha de baixo */
   .finlann-card--balance {
     grid-column: 1 / -1;
-    max-width: 320px; /* balão de saldo mais largo no mobile */
+    width: 220px;
+    max-width: 220px;
     justify-self: center;
   }
 
-  .finlann-card {
-    padding: 14px; /* baloes de entrada/saída um pouco mais "gordinhos" no mobile */
+  /* balões de resumo com padding consistente no mobile */
+  .finlann-cards-row .finlann-card {
+    padding: 14px 24px;
   }
 
   .finlann-section {
@@ -129,6 +179,50 @@
   border-radius: 20px;
   padding: 12px;
   color: #e5e7eb;
+}
+
+.finlann-section--fixed {
+  margin-bottom: 16px; /* mais espaço antes do Resumo de entradas */
+}
+
+.finlann-section__header--fixed {
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.finlann-header.finlann-header--centered {
+  justify-content: center;
+}
+
+.finlann-fixed-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.finlann-fixed-summary__chart {
+  width: 210px;
+  height: 210px;
+  border-radius: 50%;
+  background: conic-gradient(
+    rgba(37, 99, 235, 0.8) 0 40%,
+    rgba(22, 163, 74, 0.8) 40% 70%,
+    rgba(234, 179, 8, 0.8) 70% 100%
+  );
+  box-shadow: var(--shadow-subtle);
+}
+
+.finlann-fixed-summary__legend {
+  flex: 1;
+  text-align: center;
+}
+
+.finlann-fixed-summary__chart-button {
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
 .finlann-card-full__header {
@@ -438,7 +532,7 @@
 .finlann-bottom-nav__item.is-active {
   color: #dbeafe;
   background: radial-gradient(circle at top, rgba(37, 99, 235, 0.45), rgba(15, 23, 42, 0.95));
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .finlann-bottom-nav__label {
@@ -455,10 +549,23 @@
 
 .finlann-bottom-nav__item.is-active .finlann-bottom-nav__icon {
   filter: none; /* ativa cor cheia no ícone selecionado */
+  animation: finlann-nav-bounce 200ms ease-out;
 }
 
 .finlann-bottom-nav__item.is-active .finlann-bottom-nav__label {
   color: #60a5fa;
+}
+
+@keyframes finlann-nav-bounce {
+  0% {
+    transform: scale(0.9);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Overlay + modal */

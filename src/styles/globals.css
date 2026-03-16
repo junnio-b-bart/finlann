@@ -19,7 +19,7 @@ body {
   font-size: 18px; /* deixa tudo ~12–15% maior, equivalente a ~120–125% de zoom */
   display: flex;
   justify-content: center; /* garante centralização horizontal do #root */
-  overflow: hidden; /* tira o scroll da página inteira */
+  overflow-y: auto; /* permite rolar a página inteira quando o conteúdo passar da viewport */
 }
 
 #root {
@@ -45,7 +45,7 @@ body {
   width: min(95vw, 960px);
   max-width: 100%;
   margin: 0 auto;
-  padding: 16px 14px 140px; /* laterais ~metade do que era (28px → 14px) */
+  padding: 24px 14px 140px; /* topo um pouco maior pra dar respiro na logo */
   display: flex;
   flex-direction: column;
   gap: 18px;

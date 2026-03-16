@@ -36,6 +36,7 @@ export default function Dashboard({ financeState, onAddExpense, onAddIncome, onA
   const [statementCard, setStatementCard] = useState(null);
   const [statementIncomeType, setStatementIncomeType] = useState(null);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showFixedStatement, setShowFixedStatement] = useState(false);
 
   const today = new Date();
   const [currentMonthIndex, setCurrentMonthIndex] = useState(today.getMonth());
@@ -89,8 +90,23 @@ export default function Dashboard({ financeState, onAddExpense, onAddIncome, onA
         </article>
       </section>
 
-      {/* CONTEÚDO ROLÁVEL: resumo de entradas/saídas */}
+      {/* CONTEÚDO ROLÁVEL: gastos fixos + resumo de entradas/saídas */}
       <div className="finlann-dashboard__scroll">
+        <section className="finlann-section--fixed">
+          <header className="finlann-section__header finlann-section__header--fixed">
+            <h2 className="finlann-section__title">Gastos fixos do mês</h2>
+          </header>
+          <div className="finlann-fixed-summary">
+            <button
+              type="button"
+              className="finlann-fixed-summary__chart-button"
+              onClick={() => setShowFixedStatement(true)}
+            >
+              <div className="finlann-fixed-summary__chart" />
+            </button>
+          </div>
+        </section>
+
         <section className="finlann-section">
           <header className="finlann-section__header">
             <h2 className="finlann-section__title">Resumo de entradas</h2>
@@ -293,6 +309,34 @@ export default function Dashboard({ financeState, onAddExpense, onAddIncome, onA
             setCurrentYear(year);
           }}
         />
+      )}
+
+      {showFixedStatement && (
+        <div className="finlann-overlay">
+          <div className="finlann-overlay__panel">
+            <header className="finlann-modal__header">
+              <p className="finlann-modal__eyebrow">Gastos fixos</p>
+              <h2 className="finlann-modal__title">Resumo de saídas fixas</h2>
+            </header>
+            <div className="finlann-modal__body">
+              <p className="finlann-settings-profile-subtitle">
+                Aqui vai aparecer a lista de saídas fixas agrupadas por categoria
+                (carro, streaming, internet, etc.).
+              </p>
+            </div>
+            <div className="finlann-settings-actions" style={{ marginTop: 8 }}>
+              <div className="finlann-settings-actions-row">
+                <button
+                  type="button"
+                  className="finlann-chip finlann-chip--solid finlann-chip--accent"
+                  onClick={() => setShowFixedStatement(false)}
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
