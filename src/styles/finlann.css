@@ -388,20 +388,21 @@
   left: 50%;
   transform: translateX(-50%);
   bottom: 16px;
-  width: min(95vw, 960px);
+  width: min(98vw, 960px);
   border-radius: 999px;
-  padding: 6px;
+  padding: 4px; /* um pouco menos de padding para alinhar melhor o pill */
   background: rgba(15, 23, 42, 0.95);
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: 0; /* sem gap entre os slots, pill casa melhor com cada item */
   z-index: 30;
+  overflow: hidden;
 }
 
 @media (max-width: 768px) {
   .finlann-actions,
   .finlann-bottom-nav {
-    width: 88vw; /* deixa ~6vw de respiro em cada lado no mobile */
+    width: 92vw; /* um pouco mais larga no mobile, ainda com respiro lateral */
   }
 }
 
@@ -409,13 +410,21 @@
   flex: 1;
   border-radius: 999px;
   border: none;
-  padding: 6px 10px;
+  padding: 6px 12px; /* um pouco mais largo para o seletor acompanhar melhor */
   background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
+  position: relative;
+  z-index: 1;
+  transition: background 180ms ease-out, transform 180ms ease-out, color 180ms ease-out;
+}
+
+.finlann-bottom-nav__item:focus,
+.finlann-bottom-nav__item:focus-visible {
+  outline: none;
 }
 
 .finlann-bottom-nav__content {
@@ -427,9 +436,9 @@
 }
 
 .finlann-bottom-nav__item.is-active {
-  background: radial-gradient(circle at top, rgba(37, 99, 235, 0.45), rgba(15, 23, 42, 0.9));
   color: #dbeafe;
-  box-shadow: var(--shadow-subtle);
+  background: radial-gradient(circle at top, rgba(37, 99, 235, 0.45), rgba(15, 23, 42, 0.95));
+  transform: translateY(-1px);
 }
 
 .finlann-bottom-nav__label {

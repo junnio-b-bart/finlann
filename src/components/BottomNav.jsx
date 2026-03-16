@@ -11,6 +11,11 @@ const items = [
 ];
 
 export default function BottomNav({ current = "overview", onChange }) {
+  const activeIndex = Math.max(
+    0,
+    items.findIndex((item) => item.id === current)
+  );
+
   return (
     <nav className="finlann-bottom-nav">
       {items.map((item) => {
