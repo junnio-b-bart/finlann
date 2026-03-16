@@ -6,7 +6,7 @@ import "../styles/finlann.css";
 import { exportState, normalizeState } from "../data/finance.sync.js";
 import googleLogo from "../assets/Google_G_logo.png";
 import { isGoogleConfigured, isLoggedInToGoogle, getCurrentGoogleUser, loginWithGoogle, logoutFromGoogle, syncWithGoogleDrive, loadRemoteStateFromDrive } from "../data/googleDriveClient.js";
-import { createAccount } from "../data/finlannBackendClient.js";
+import { createAccount, loginAccount, loadStateFromBackend, saveStateToBackend } from "../data/finlannBackendClient.js";
 import SettingsCards from "./SettingsCards.jsx";
 import SettingsNotifications from "./SettingsNotifications.jsx";
 
@@ -71,7 +71,10 @@ export default function Settings({
   const [modalThemeColor, setModalThemeColor] = useState("#3b82f6"); // cor base do pop-up de conta
   const [modalShowCustomColor, setModalShowCustomColor] = useState(false);
   const [modalCustomThemeColor, setModalCustomThemeColor] = useState(null);
-
+ 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showSyncSuccess, setShowSyncSuccess] = useState(false);
+  const [accountConflict, setAccountConflict] = useState(null); // { remoteState }
   const [modalEmailError, setModalEmailError] = useState(false);
   const [modalFirstNameError, setModalFirstNameError] = useState(false);
   const [modalLastNameError, setModalLastNameError] = useState(false);
@@ -251,7 +254,9 @@ export default function Settings({
 
           <div className="finlann-settings-profile-text">
             <p className="finlann-settings-profile-name">
-              Finlann{currentAccount ? ` — ${currentAccount.first_name || currentAccount.user_id}` : ""}
+              {currentAccount
+                ? `${currentAccount.first_name || ""} ${currentAccount.last_name || ""}`.trim() || currentAccount.user_id
+                : "Finlann"}
             </p>
             <p className="finlann-settings-profile-subtitle">
               {currentAccount
@@ -261,23 +266,69 @@ export default function Settings({
           </div>
         </div>
 
-        <div className="finlann-settings-actions-bar">
+        <div
+          className="finlann-settings-actions-bar"
+          style={currentAccount ? { flexDirection: "column", alignItems: "flex-start", gap: 8 } : undefined}
+        >
+          {currentAccount && (
+            <div className="finlann-settings-actions-row" style={{ width: "100%", gap: 8 }}>
+              <button
+                type="button"
+                className="finlann-chip finlann-chip--outline"
+                style={{ width: 260 }}
+                onClick={() => {
+                  window.alert("Edição de dados da conta ainda não está disponível.");
+                }}
+              >
+                Editar conta
+              </button>
+              <button
+                type="button"
+                className="finlann-chip finlann-chip--outline"
+                onClick={async () => {
+                  try {
+                    await saveStateToBackend(financeState, currentAccount.user_id);
+                    setShowSyncSuccess(true);
+                  } catch (e) {
+                    console.error("[Finlann] Erro ao forçar sync com backend:", e);
+                    setModalError("Não foi possível sincronizar agora. Tente novamente.");
+                  }
+                }}
+                aria-label="Sincronizar agora"
+              >
+                ↻
+              </button>
+            </div>
+          )}
+
           <button
             type="button"
             className="finlann-chip finlann-chip--outline finlann-settings-actions-bar__left"
-            style={{ flex: 0.6 }}
-            onClick={() => openAccountModal("login")}
+            style={{
+              width: 260,
+              borderColor: currentAccount ? "#f97373" : undefined,
+              color: currentAccount ? "#f97373" : undefined,
+            }}
+            onClick={() => {
+              if (currentAccount) {
+                setShowLogoutConfirm(true);
+              } else {
+                openAccountModal("login");
+              }
+            }}
           >
-            Entrar
+            {currentAccount ? "Sair da conta" : "Entrar"}
           </button>
-          <button
-            type="button"
-            className="finlann-chip finlann-chip--outline finlann-settings-actions-bar__right"
-            style={{ flex: 0.4 }}
-            onClick={() => openAccountModal("create")}
-          >
-            Criar conta
-          </button>
+          {!currentAccount && (
+            <button
+              type="button"
+              className="finlann-chip finlann-chip--outline finlann-settings-actions-bar__right"
+              style={{ flex: 0.4 }}
+              onClick={() => openAccountModal("create")}
+            >
+              Criar conta
+            </button>
+          )}
         </div>
       </section>
 
@@ -833,11 +884,176 @@ export default function Settings({
                     Criar conta
                   </button>
                 )}
+                {accountModalMode === "login" && (
+                  <button
+                    type="button"
+                    className="finlann-chip finlann-chip--solid finlann-chip--accent"
+                    onClick={async () => {
+                      setModalUserError(false);
+                      setModalPasswordErrorFlag(false);
+                      setModalError("");
+
+                      let hasError = false;
+                      if (!modalUser) {
+                        setModalUserError(true);
+                        hasError = true;
+                      }
+                      if (hasError) return;
+
+                      try {
+                        const account = await loginAccount({
+                          user_id: modalUser,
+                          password: modalPassword || null,
+                        });
+                        setAndPersistCurrentAccount(account);
+
+                        // conflito local x backend para essa conta
+                        try {
+                          const remoteState = await loadStateFromBackend(account.user_id);
+                          const local = normalizeState(financeState);
+
+                          const localIsEmpty =
+                            (local.cards?.length || 0) === 0 &&
+                            (local.expenses?.length || 0) === 0 &&
+                            (local.incomes?.length || 0) === 0;
+
+                          if (!remoteState && !localIsEmpty) {
+                            const choice = window.prompt(
+                              "Sua conta Finlann está vazia, mas este dispositivo já tem dados.\n" +
+                                "Digite:\n" +
+                                "1 - Limpar este app e começar uma conta zerada\n" +
+                                "2 - Usar apenas os dados deste dispositivo",
+                              "2"
+                            );
+
+                            if (choice === "1") {
+                              onResetState?.();
+                            }
+                            // escolha "2" mantém o estado local; autosave depois sobe para a conta
+                          } else if (remoteState && localIsEmpty) {
+                            // app vazio, conta com dados -> usar dados da conta
+                            if (onSyncState) {
+                              onSyncState(remoteState);
+                            }
+                          } else if (remoteState && !localIsEmpty) {
+                            // temos dados locais E na conta -> abre pop-up de conflito estilizado
+                            setAccountConflict({ remoteState });
+                          }
+                        } catch (e) {
+                          console.warn("[Finlann] Não foi possível resolver conflito local/backend após login:", e);
+                        }
+
+                        closeAccountModal();
+                      } catch (err) {
+                        console.error("[Finlann] Erro ao fazer login na conta Finlann:", err);
+                        setModalError("Usuário ou senha inválidos.");
+                      }
+                    }}
+                  >
+                    Entrar
+                  </button>
+                )}
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {showLogoutConfirm && (
+        <div className="finlann-overlay">
+          <div className="finlann-overlay__panel">
+            <header className="finlann-modal__header">
+              <p className="finlann-modal__eyebrow">Conta Finlann</p>
+              <h2 className="finlann-modal__title">Sair da conta</h2>
+            </header>
+            <div className="finlann-modal__body">
+              <p className="finlann-settings-profile-subtitle">
+                Deseja sair da conta Finlann atual?
+              </p>
+            </div>
+            <div className="finlann-settings-actions" style={{ marginTop: 8 }}>
+              <div className="finlann-settings-actions-row">
+                <button
+                  type="button"
+                  className="finlann-chip finlann-chip--outline"
+                  onClick={() => setShowLogoutConfirm(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="finlann-chip finlann-chip--solid finlann-chip--accent"
+                  onClick={() => {
+                    setShowLogoutConfirm(false);
+                    setAndPersistCurrentAccount(null);
+                    try {
+                      if (typeof window !== "undefined") {
+                        window.localStorage.removeItem("finlann.currentAccount");
+                        window.localStorage.removeItem("finlann.householdId");
+                      }
+                    } catch {}
+                  }}
+                >
+                  Sair da conta
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {accountConflict && (
+        <div className="finlann-overlay">
+          <div className="finlann-overlay__panel">
+            <header className="finlann-modal__header">
+              <p className="finlann-modal__eyebrow">Conta Finlann</p>
+              <h2 className="finlann-modal__title">Qual dado usar?</h2>
+            </header>
+            <div className="finlann-modal__body">
+              <p className="finlann-settings-profile-subtitle">
+                Encontramos dados neste dispositivo <strong>e</strong> na sua conta Finlann.
+              </p>
+              <p className="finlann-settings-profile-subtitle" style={{ marginTop: 8 }}>
+                Escolha qual fonte quer usar agora:
+              </p>
+            </div>
+            <div className="finlann-settings-actions" style={{ marginTop: 8 }}>
+              <div className="finlann-settings-actions-row">
+                <button
+                  type="button"
+                  className="finlann-chip finlann-chip--outline"
+                  onClick={() => {
+                    // usar apenas os dados da conta
+                    if (accountConflict.remoteState && onSyncState) {
+                      onSyncState(accountConflict.remoteState);
+                    }
+                    setAccountConflict(null);
+                  }}
+                >
+                  Usar dados da conta
+                </button>
+                <button
+                  type="button"
+                  className="finlann-chip finlann-chip--solid finlann-chip--accent"
+                  onClick={async () => {
+                    // manter apenas os dados deste dispositivo; autosave já atualiza a conta,
+                    // mas forçamos um save agora para garantir
+                    try {
+                      await saveStateToBackend(financeState, currentAccount?.user_id);
+                    } catch (e) {
+                      console.warn("[Finlann] Erro ao salvar estado local como fonte principal após conflito:", e);
+                    }
+                    setAccountConflict(null);
+                  }}
+                >
+                  Usar dados deste dispositivo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

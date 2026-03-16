@@ -97,3 +97,32 @@ export async function createAccount(profile) {
 
   return data;
 }
+
+export async function loginAccount({ user_id, password }) {
+  if (!supabase) {
+    throw new Error("Supabase não configurado");
+  }
+
+  const { data, error } = await supabase
+    .from("finlann_accounts")
+    .select("id, user_id, email, first_name, last_name, has_password, password, theme_color")
+    .eq("user_id", user_id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[Finlann] Erro ao buscar conta para login:", error);
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error("INVALID_CREDENTIALS");
+  }
+
+  if (data.has_password) {
+    if (!password || data.password !== password) {
+      throw new Error("INVALID_CREDENTIALS");
+    }
+  }
+
+  return data;
+}
