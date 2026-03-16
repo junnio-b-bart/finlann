@@ -70,14 +70,11 @@ export default function History({ financeState, onUpdateIncomes, onUpdateExpense
     <div className="finlann-dashboard">
       <header className="finlann-header finlann-header--centered">
         <div className="finlann-header__left">
-          <h1 className="finlann-section__title">Histórico de lançamentos</h1>
+          <h1 className="finlann-section__title">Últimos lançamentos</h1>
         </div>
       </header>
 
       <section className="finlann-section finlann-section--history">
-        <header className="finlann-section__header">
-          <h2 className="finlann-section__title">Últimos lançamentos</h2>
-        </header>
 
         <div className="finlann-section__scroll">
           <div className="finlann-list">

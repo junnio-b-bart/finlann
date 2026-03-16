@@ -36,7 +36,7 @@ body {
   justify-content: center;
   align-items: flex-start; /* app começa sempre "colado" no topo visual */
   background: radial-gradient(circle at top, #020617 0, #020617 30%, #020617 60%, #020617 100%);
-  padding: 16px; /* respiro nas laterais, sem cortar bordas */
+  padding: 8px; /* respiro nas laterais, agora ~metade da margem original */
   overflow: hidden; /* garante que nada escape e não apareça scroll */
 }
 
@@ -45,7 +45,7 @@ body {
   width: min(95vw, 960px);
   max-width: 100%;
   margin: 0 auto;
-  padding: 16px 28px 140px; /* espaço reservado para botões + barra fixa, sem sobrepor conteúdo */
+  padding: 16px 14px 140px; /* laterais ~metade do que era (28px → 14px) */
   display: flex;
   flex-direction: column;
   gap: 18px;

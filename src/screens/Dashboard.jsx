@@ -76,19 +76,16 @@ export default function Dashboard({ financeState, onAddExpense, onAddIncome, onA
         <article className="finlann-card finlann-card--income">
           <p className="finlann-card__label">Entradas</p>
           <p className="finlann-card__value">{format(summary.totalIncomes)}</p>
-          <p className="finlann-card__hint">no mês</p>
         </article>
 
         <article className="finlann-card finlann-card--expense">
           <p className="finlann-card__label">Saídas</p>
           <p className="finlann-card__value">{format(summary.totalExpenses)}</p>
-          <p className="finlann-card__hint">no mês</p>
         </article>
 
         <article className="finlann-card finlann-card--balance">
           <p className="finlann-card__label">Saldo</p>
           <p className="finlann-card__value">{format(summary.balance)}</p>
-          <p className="finlann-card__hint">resumo geral</p>
         </article>
       </section>
 

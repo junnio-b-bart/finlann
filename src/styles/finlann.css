@@ -13,6 +13,11 @@
   padding-right: 4px; /* espaço mínimo pra não colar na scrollbar */
 }
 
+/* espaçamento vertical entre blocos "Resumo de entradas" / "Resumo de saídas" igual ao gap principal */
+.finlann-dashboard__scroll .finlann-section + .finlann-section {
+  margin-top: 16px;
+}
+
 .finlann-header {
   display: flex;
   justify-content: space-between;
@@ -220,7 +225,12 @@
 }
 
 .finlann-section__title {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-lg);
+}
+
+/* títulos principais de página (Config, Histórico) um pouco maiores, mas não gigantes */
+.finlann-header--centered .finlann-section__title {
+  font-size: var(--font-size-xl);
 }
 
 .finlann-section__tag {
