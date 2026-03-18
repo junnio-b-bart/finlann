@@ -7,9 +7,10 @@ export default defineConfig(({ mode }) => {
 const env = loadEnv(mode, process.cwd(), '')
 
 return {
-plugins: [react()],
-define: {
-__FINLANN_GOOGLE_CLIENT_ID__: JSON.stringify(env.FINLANN_GOOGLE_CLIENT_ID || ''),
-},
+  base: '/finlann/', // TODO: se o repositório tiver outro nome, trocar aqui pelo nome do repo
+  plugins: [react()],
+  define: {
+    __FINLANN_GOOGLE_CLIENT_ID__: JSON.stringify(env.FINLANN_GOOGLE_CLIENT_ID || ''),
+  },
 }
 })
