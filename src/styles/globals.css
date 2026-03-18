@@ -43,18 +43,19 @@ body {
 #root {
   width: 100%;
   max-width: 100vw;
+  height: 100%; /* ocupa a altura inteira do body */
   display: flex;
   justify-content: center;
 }
 
 .app-root {
-  min-height: 100vh;
+  height: 100vh; /* app sempre encaixado na altura da viewport */
   display: flex;
   justify-content: center;
   align-items: flex-start; /* app começa sempre "colado" no topo visual */
   background: transparent; /* deixa o fundo sólido do body aparecer por igual */
   padding: 8px; /* respiro nas laterais */
-  overflow: visible; /* não cria um segundo scroll dentro do app */
+  overflow: hidden; /* evita scroll extra na página; só os boxes internos rolam */
 }
 
 .app-shell {
