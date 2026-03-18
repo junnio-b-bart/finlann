@@ -111,7 +111,7 @@ main {
   .app-shell {
     width: 100vw;
     max-width: 100vw;
-    padding: 4px 10px 120px; /* encosta o conteúdo mais perto do topo no mobile */
+    padding: 0 10px 120px; /* tira o padding de cima pra logo colar no topo útil */
     gap: 10px;
   }
 
