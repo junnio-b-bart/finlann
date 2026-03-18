@@ -14,12 +14,30 @@ body,
 
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif;
-  background: radial-gradient(circle at top, #020617 0, #020617 20%, #020617 40%, #020617 60%, #020617 100%);
+  background: radial-gradient(circle at top, #020617 0, #020617 30%, #020617 60%, #020617 100%);
   color: var(--color-text);
   font-size: 18px; /* deixa tudo ~12–15% maior, equivalente a ~120–125% de zoom */
   display: flex;
   justify-content: center; /* garante centralização horizontal do #root */
-  overflow-y: auto; /* permite rolar a página inteira quando o conteúdo passar da viewport */
+  overflow-y: auto; /* página pode rolar normalmente */
+}
+
+/* Scrollbar global mais moderna: fininha e arredondada */
+body::-webkit-scrollbar {
+  width: 0; /* esconde a barra, mas mantém o scroll */
+}
+
+body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+body {
+  scrollbar-width: none; /* Firefox: sem barra, mas com scroll */
+  scrollbar-color: transparent transparent;
 }
 
 #root {
@@ -31,13 +49,12 @@ body {
 
 .app-root {
   min-height: 100vh;
-  max-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: flex-start; /* app começa sempre "colado" no topo visual */
-  background: radial-gradient(circle at top, #020617 0, #020617 30%, #020617 60%, #020617 100%);
-  padding: 8px; /* respiro nas laterais, agora ~metade da margem original */
-  overflow: hidden; /* garante que nada escape e não apareça scroll */
+  background: transparent; /* deixa o fundo sólido do body aparecer por igual */
+  padding: 8px; /* respiro nas laterais */
+  overflow: visible; /* não cria um segundo scroll dentro do app */
 }
 
 .app-shell {
@@ -49,7 +66,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  /* sem transform aqui para a barra de menu/botões realmente seguirem a viewport, não o cartão */
 }
 
 main {

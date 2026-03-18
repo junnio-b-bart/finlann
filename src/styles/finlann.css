@@ -5,12 +5,43 @@
   flex: 1; /* ocupa a altura disponível entre topo e barra/botões */
 }
 
+/* topo fixo: logo + mês/ano + cards de resumo, grudados no topo do app quando rolar */
+.finlann-dashboard__top {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding-bottom: 8px;
+  /* fundo sólido pra não deixar o conteúdo rolando "vazar" por trás */
+  background: radial-gradient(circle at top, #020617 0, #020617 30%, #020617 60%, #020617 100%);
+}
+
 /* área de conteúdo rolável no meio da página (resumo de entradas/saídas) */
 .finlann-dashboard__scroll {
   flex: 1;
   min-height: 0; /* libera o flexbox pra permitir scroll interno */
   overflow-y: auto;
   padding-right: 4px; /* espaço mínimo pra não colar na scrollbar */
+  padding-bottom: 96px; /* respiro extra acima dos botões + Entrada / - Saída */
+  scrollbar-width: thin; /* Firefox: barra fininha */
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent; /* thumb discreta, trilho invisível */
+}
+
+/* Scrollbar estilo WhatsApp: fininha, arredondada, só no miolo do app */
+.finlann-dashboard__scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.finlann-dashboard__scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.finlann-dashboard__scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 999px;
+}
+
+.finlann-dashboard__scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(191, 219, 254, 0.85);
 }
 
 /* espaçamento vertical entre blocos "Resumo de entradas" / "Resumo de saídas" igual ao gap principal */
