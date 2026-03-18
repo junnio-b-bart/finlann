@@ -41,11 +41,11 @@
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
   /* scroll interno só neste box quando o conteúdo passar da tela */
-  max-height: calc(100vh - 260px); /* reserva espaço pro topo + botões */
+  max-height: calc(100vh - 200px); /* estende mais pra baixo, bem perto dos botões */
   overflow-y: auto;
   scrollbar-width: thin; /* Firefox: barra fininha dentro do box */
   scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
-  margin-bottom: 16px; /* espaço entre o box e a barra de menu/botões */
+  margin-bottom: 8px; /* só um respiro antes da barra de menu */
   z-index: 1; /* abaixo dos cards de Entradas/Saídas/Saldo */
 }
 
