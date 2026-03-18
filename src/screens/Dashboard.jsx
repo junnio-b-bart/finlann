@@ -65,24 +65,26 @@ export default function Dashboard({
     <div className="finlann-dashboard">
       {/* TOPO FIXO: logo + título da página (mês/ano) + cards de resumo */}
       <div className="finlann-dashboard__top">
-        <header className="finlann-header finlann-header--centered">
-          <div className="finlann-header__left">
-            <div className="finlann-logo-pill">
-              <img
-                src={logoFinlann}
-                alt="Finlann"
-                className="finlann-logo-img"
-              />
+        <div className="finlann-header-strip">
+          <header className="finlann-header finlann-header--centered">
+            <div className="finlann-header__left">
+              <div className="finlann-logo-pill">
+                <img
+                  src={logoFinlann}
+                  alt="Finlann"
+                  className="finlann-logo-img"
+                />
+              </div>
+              <button
+                type="button"
+                className="finlann-header__subtitle finlann-header__subtitle--clickable"
+                onClick={() => setShowMonthPicker(true)}
+              >
+                {MONTH_LABELS[currentMonthIndex]} · {currentYear}
+              </button>
             </div>
-            <button
-              type="button"
-              className="finlann-header__subtitle finlann-header__subtitle--clickable"
-              onClick={() => setShowMonthPicker(true)}
-            >
-              {MONTH_LABELS[currentMonthIndex]} · {currentYear}
-            </button>
-          </div>
-        </header>
+          </header>
+        </div>
 
         <section className="finlann-cards-row">
           <article className="finlann-card finlann-card--income">

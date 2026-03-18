@@ -11,7 +11,12 @@
   top: 0;
   z-index: 5;
   padding-bottom: 8px;
-  /* fundo sólido pra não deixar o conteúdo rolando "vazar" por trás */
+}
+
+/* faixa dura só atrás da logo + mês/ano */
+.finlann-header-strip {
+  padding-top: 8px;
+  padding-bottom: 4px;
   background: radial-gradient(circle at top, #020617 0, #020617 30%, #020617 60%, #020617 100%);
 }
 
@@ -115,6 +120,7 @@
   justify-content: center; /* centraliza o par de balões */
   row-gap: 8px; /* espaço entre a linha de cima e o saldo */
   column-gap: 0; /* distancia controlada por margin dos cards */
+  margin-top: 12px; /* mais espaço entre o mês/ano e o resumo de Entradas/Saídas/Saldo */
 }
 
 /* Em telas maiores, ajusta os balões de resumo geral */
@@ -200,9 +206,13 @@
 .finlann-card {
   padding: 10px;
   border-radius: 18px;
-  background: radial-gradient(circle at top, #020617, #020617 40%, #020617 100%);
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  /* efeito glass: fundo semi-transparente com blur do que está atrás */
+  background: rgba(15, 23, 42, 0.72); /* um pouco mais escuro pra destacar os valores */
+  border: 1px solid rgba(148, 163, 184, 0.28);
   box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  margin-bottom: 2px; /* respiro de 2px abaixo dos cards de Entradas/Saídas/Saldo */
 }
 
 /* Cardão da página de Cartões (Config) */
@@ -213,7 +223,10 @@
 }
 
 .finlann-section--fixed {
-  margin-bottom: 16px; /* mais espaço antes do Resumo de entradas */
+  margin-top: 2px;  /* quase colado no card de saldo, com respiro mínimo */
+  margin-bottom: 12px; 
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
 .finlann-section__header--fixed {
@@ -370,9 +383,12 @@
 .finlann-section {
   padding: 12px;
   border-radius: var(--radius-lg);
-  background: radial-gradient(circle at top left, #020617, #020617 40%, #020617 100%);
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  /* efeito glass também nas seções de resumo: transparente com blur */
+  background: rgba(15, 23, 42, 0.52);
+  border: 1px solid rgba(148, 163, 184, 0.24);
   box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .finlann-section__header {

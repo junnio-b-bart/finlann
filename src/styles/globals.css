@@ -20,6 +20,7 @@ body {
   display: flex;
   justify-content: center; /* garante centralização horizontal do #root */
   overflow-y: auto; /* página pode rolar normalmente */
+  overflow-x: hidden; /* remove scrollbar horizontal em qualquer resolução */
 }
 
 /* Scrollbar global mais moderna: fininha e arredondada */
