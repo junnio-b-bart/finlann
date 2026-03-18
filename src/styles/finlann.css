@@ -93,7 +93,7 @@
 .finlann-header__left {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px; /* mais espaço entre a logo e o título/mês */
   align-items: center; /* centraliza logo + mês/ano embaixo dela */
 }
 
@@ -1018,8 +1018,29 @@
 
 .finlann-section--history .finlann-section__scroll {
   margin-top: 4px;
-  max-height: 750px;      /* card ocupa quase toda a altura útil antes de rolar por dentro */
+  max-height: 700px;      /* menor, deixa o card mais compacto antes da barra inferior */
   overflow-y: auto;
+  padding-right: 4px;     /* espaço pro conteúdo não encostar na barra */
+  scrollbar-width: thin;  /* Firefox: barra fininha dentro do card */
+  scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
+}
+
+.finlann-section--history .finlann-section__scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.finlann-section--history .finlann-section__scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 8px 0; /* respiro acima e abaixo da barra dentro do card */
+}
+
+.finlann-section--history .finlann-section__scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.6);
+  border-radius: 999px;
+}
+
+.finlann-section--history .finlann-section__scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(191, 219, 254, 0.9);
 }
 
 .finlann-statement-row {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import "../styles/globals.css";
 import "../styles/tokens.css";
 import "../styles/finlann.css";
+import logoFinlann from "../assets/FinlannLogo.png";
 import HistoryEntryModal from "../components/HistoryEntryModal.jsx";
 import HistoryEditEntryModal from "../components/HistoryEditEntryModal.jsx";
 
@@ -70,6 +71,13 @@ export default function History({ financeState, onUpdateIncomes, onUpdateExpense
     <div className="finlann-dashboard">
       <header className="finlann-header finlann-header--centered">
         <div className="finlann-header__left">
+          <div className="finlann-logo-pill">
+            <img
+              src={logoFinlann}
+              alt="Finlann"
+              className="finlann-logo-img"
+            />
+          </div>
           <h1 className="finlann-section__title">Últimos lançamentos</h1>
         </div>
       </header>
