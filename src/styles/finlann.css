@@ -13,11 +13,13 @@
   padding-bottom: 8px;
 }
 
-/* faixa dura só atrás da logo + mês/ano */
+/* faixa atrás da logo + mês/ano com mesma cor do background do app */
 .finlann-header-strip {
   padding-top: 8px;
   padding-bottom: 4px;
-  background: radial-gradient(circle at top, #020617 0, #020617 30%, #020617 60%, #020617 100%);
+  background: #020617;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* área de conteúdo (resumo de entradas/saídas) – deixa o scroll por conta da página */
@@ -33,22 +35,24 @@
 .finlann-summary-box {
   position: relative;
   border-radius: 20px;
-  /* truque de camada: o fundo começa na mesma altura dos cards, mas o conteúdo começa abaixo */
-  margin-top: -216px;   /* sobe mais um pouco; agora o vidro encosta bem na faixa da logo */
-  padding: 216px 8px 12px; /* mantém o conteúdo começando logo abaixo dos cards */
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
+  /* truque de camada: o fundo começa na mesma altura dos cards, mas o conteúdo começa um pouco mais alto */
+  margin-top: -214px;   /* abaixa o box 2px em relação à logo/cards */
+  padding: 188px 8px 12px; /* conteúdo na mesma altura relativa aos cards */
+  /* vidro contínuo atrás do conteúdo do box */
+  /* fundo transparente: deixa só os próprios cards/seções aparecerem */
+  background: transparent;
+  border: 1px solid transparent; /* sem borda desenhada */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   margin-bottom: 8px; /* só um respiro antes da barra de menu */
   z-index: 1; /* abaixo dos cards de Entradas/Saídas/Saldo */
 }
 
 /* conteúdo rolável dentro do box, com respiro em cima/baixo da barra */
 .finlann-summary-inner {
-  max-height: 520px; /* desce mais um pouco, quase tocando os botões sem passar */
+  max-height: 484px; /* ajuste fino extra: +2px pra chegar um pouco mais perto dos botões */
   overflow-y: auto;
-  padding: 12px 4px 12px 0; /* moldura de vidro puro em cima e embaixo do conteúdo */
+  padding: 12px 4px 20px 0; /* respiro de vidro puro em cima e embaixo do conteúdo */
   scrollbar-width: thin; /* Firefox: barra fininha dentro do box */
   scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
 }
