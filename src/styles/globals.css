@@ -87,32 +87,36 @@ main {
 
 /* celular em pé / telas bem estreitas */
 @media (max-width: 768px) {
-  /* fontes um pouco menores no mobile pra não parecer zoom */
+  /* fontes menores no mobile pra tirar sensação de zoom */
   :root {
-    --font-size-xs: 14px;
-    --font-size-sm: 16px;
-    --font-size-md: 18px;
-    --font-size-lg: 20px;
-    --font-size-xl: 24px;
-    --font-size-2xl: 28px;
+    --font-size-xs: 12px;
+    --font-size-sm: 14px;
+    --font-size-md: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 22px;
+    --font-size-2xl: 26px;
   }
 
   body {
-    font-size: 15px;
+    font-size: 14px;
   }
 
+  /* no mobile, usa a altura "real" da viewport pra evitar segundo scroll da página */
   .app-root {
-    padding: 4px;
+    height: 100dvh; /* cobre a altura útil real, sem empurrar por causa da barra do navegador */
+    padding: 0 4px 4px; /* remove o espaço de cima, mantém respiro nas laterais/baixo */
+    overflow: hidden; /* garante que só os boxes internos rolem */
   }
 
   .app-shell {
     width: 100vw;
     max-width: 100vw;
-    padding: 8px 10px 120px; /* laterais pequenas, mas ainda com respiro */
-    gap: 12px;
+    padding: 4px 10px 120px; /* encosta o conteúdo mais perto do topo no mobile */
+    gap: 10px;
   }
 
-  .finlann-header__left {
-    align-items: flex-start;
+  /* Logo um pouco menor no mobile pra reduzir a sensação de zoom */
+  .finlann-logo-img {
+    height: 54px;
   }
 }

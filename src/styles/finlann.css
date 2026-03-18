@@ -28,7 +28,7 @@
   min-height: 0;
   overflow-y: visible;  /* sem scroll próprio nem barra neste box */
   padding-right: 4px;
-  padding-bottom: 96px; /* respiro extra acima dos botões + Entrada / - Saída */
+  padding-bottom: 82px; /* gapzinho de ~2px entre o box grande e os botões */
 }
 
 /* box maior agrupando Gastos fixos + Resumo de entradas + Resumo de saídas */
