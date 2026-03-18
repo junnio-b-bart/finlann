@@ -106,6 +106,7 @@ export default function Dashboard({
 
       {/* CONTEÚDO ROLÁVEL: gastos fixos + resumo de entradas/saídas */}
       <div className="finlann-dashboard__scroll">
+        <div className="finlann-summary-box">
         <section className="finlann-section--fixed">
           <header className="finlann-section__header finlann-section__header--fixed">
             <h2 className="finlann-section__title">Gastos fixos do mês</h2>
@@ -242,7 +243,8 @@ export default function Dashboard({
             })}
           </div>
         </section>
-      </div>
+      </div>{/* fim da finlann-summary-box */}
+      </div>{/* fim do finlann-dashboard__scroll */}
 
       {/* BORDA INFERIOR FIXA DENTRO DO APP: botões + barra de menu */}
       <section className="finlann-actions">

@@ -20,33 +20,50 @@
   background: radial-gradient(circle at top, #020617 0, #020617 30%, #020617 60%, #020617 100%);
 }
 
-/* área de conteúdo rolável no meio da página (resumo de entradas/saídas) */
+/* área de conteúdo (resumo de entradas/saídas) – deixa o scroll por conta da página */
 .finlann-dashboard__scroll {
   flex: 1;
-  min-height: 0; /* libera o flexbox pra permitir scroll interno */
-  overflow-y: auto;
-  padding-right: 4px; /* espaço mínimo pra não colar na scrollbar */
+  min-height: 0;
+  overflow-y: visible;  /* sem scroll próprio nem barra neste box */
+  padding-right: 4px;
   padding-bottom: 96px; /* respiro extra acima dos botões + Entrada / - Saída */
-  scrollbar-width: thin; /* Firefox: barra fininha */
-  scrollbar-color: rgba(148, 163, 184, 0.4) transparent; /* thumb discreta, trilho invisível */
 }
 
-/* Scrollbar estilo WhatsApp: fininha, arredondada, só no miolo do app */
-.finlann-dashboard__scroll::-webkit-scrollbar {
+/* box maior agrupando Gastos fixos + Resumo de entradas + Resumo de saídas */
+.finlann-summary-box {
+  position: relative;
+  border-radius: 20px;
+  /* truque de camada: o fundo começa na mesma altura dos cards, mas o conteúdo começa abaixo */
+  margin-top: -216px;   /* sobe mais um pouco; agora o vidro encosta bem na faixa da logo */
+  padding: 216px 8px 12px; /* mantém o conteúdo começando logo abaixo dos cards */
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  /* scroll interno só neste box quando o conteúdo passar da tela */
+  max-height: calc(100vh - 260px); /* reserva espaço pro topo + botões */
+  overflow-y: auto;
+  scrollbar-width: thin; /* Firefox: barra fininha dentro do box */
+  scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
+  margin-bottom: 16px; /* espaço entre o box e a barra de menu/botões */
+  z-index: 1; /* abaixo dos cards de Entradas/Saídas/Saldo */
+}
+
+.finlann-summary-box::-webkit-scrollbar {
   width: 6px;
 }
 
-.finlann-dashboard__scroll::-webkit-scrollbar-track {
+.finlann-summary-box::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.finlann-dashboard__scroll::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
+.finlann-summary-box::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.6);
   border-radius: 999px;
 }
 
-.finlann-dashboard__scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(191, 219, 254, 0.85);
+.finlann-summary-box::-webkit-scrollbar-thumb:hover {
+  background: rgba(191, 219, 254, 0.9);
 }
 
 /* espaçamento vertical entre blocos "Resumo de entradas" / "Resumo de saídas" igual ao gap principal */
@@ -115,12 +132,14 @@
 }
 
 .finlann-cards-row {
+  position: relative; /* permite controlar a camada via z-index */
   display: grid;
   grid-template-columns: auto auto; /* só duas colunas: Entradas e Saídas lado a lado */
   justify-content: center; /* centraliza o par de balões */
   row-gap: 8px; /* espaço entre a linha de cima e o saldo */
   column-gap: 0; /* distancia controlada por margin dos cards */
-  margin-top: 12px; /* mais espaço entre o mês/ano e o resumo de Entradas/Saídas/Saldo */
+  margin-top: 12px; /* espaço entre o mês/ano e o resumo de Entradas/Saídas/Saldo */
+  z-index: 2; /* fica acima do box grande */
 }
 
 /* Em telas maiores, ajusta os balões de resumo geral */

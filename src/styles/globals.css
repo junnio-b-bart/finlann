@@ -19,8 +19,7 @@ body {
   font-size: 18px; /* deixa tudo ~12–15% maior, equivalente a ~120–125% de zoom */
   display: flex;
   justify-content: center; /* garante centralização horizontal do #root */
-  overflow-y: auto; /* página pode rolar normalmente */
-  overflow-x: hidden; /* remove scrollbar horizontal em qualquer resolução */
+  overflow: hidden; /* sem scroll na página inteira */
 }
 
 /* Scrollbar global mais moderna: fininha e arredondada */
