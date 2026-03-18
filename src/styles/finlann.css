@@ -40,29 +40,34 @@
   border: 1px solid rgba(148, 163, 184, 0.3);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
-  /* scroll interno só neste box quando o conteúdo passar da tela */
-  max-height: calc(100vh - 200px); /* estende mais pra baixo, bem perto dos botões */
-  overflow-y: auto;
-  scrollbar-width: thin; /* Firefox: barra fininha dentro do box */
-  scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
   margin-bottom: 8px; /* só um respiro antes da barra de menu */
   z-index: 1; /* abaixo dos cards de Entradas/Saídas/Saldo */
 }
 
-.finlann-summary-box::-webkit-scrollbar {
+/* conteúdo rolável dentro do box, com respiro em cima/baixo da barra */
+.finlann-summary-inner {
+  max-height: 520px; /* desce mais um pouco, quase tocando os botões sem passar */
+  overflow-y: auto;
+  padding: 12px 4px 12px 0; /* moldura de vidro puro em cima e embaixo do conteúdo */
+  scrollbar-width: thin; /* Firefox: barra fininha dentro do box */
+  scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
+}
+
+.finlann-summary-inner::-webkit-scrollbar {
   width: 6px;
 }
 
-.finlann-summary-box::-webkit-scrollbar-track {
+.finlann-summary-inner::-webkit-scrollbar-track {
   background: transparent;
+  margin: 8px 0; /* cria respiro acima e abaixo da barra dentro do box */
 }
 
-.finlann-summary-box::-webkit-scrollbar-thumb {
+.finlann-summary-inner::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.6);
   border-radius: 999px;
 }
 
-.finlann-summary-box::-webkit-scrollbar-thumb:hover {
+.finlann-summary-inner::-webkit-scrollbar-thumb:hover {
   background: rgba(191, 219, 254, 0.9);
 }
 
