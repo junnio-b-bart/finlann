@@ -23,6 +23,22 @@ export default function App() {
     return createDemoStateForMonth(today.getFullYear(), today.getMonth());
   });
 
+  // Migração rápida: garante que não existam despesas duplicadas com o mesmo id
+  useEffect(() => {
+    setFinanceState((prev) => {
+      if (!prev || !Array.isArray(prev.expenses)) return prev;
+      const seen = new Set();
+      const deduped = prev.expenses.filter((e) => {
+        if (!e || !e.id) return true;
+        if (seen.has(e.id)) return false;
+        seen.add(e.id);
+        return true;
+      });
+      if (deduped.length === prev.expenses.length) return prev;
+      return { ...prev, expenses: deduped };
+    });
+  }, []);
+
   // Pequena camada de comandos internos para permitir que o agente
   // registre entradas/saídas "por trás" do app (sem digitar no browser).
   useEffect(() => {
@@ -197,6 +213,9 @@ export default function App() {
               onUpdateCard={handleUpdateCard}
               onRemoveExpenses={handleRemoveExpenses}
               onTransferExpenses={handleTransferExpenses}
+              onUpdateExpenses={(updater) =>
+                setFinanceState((prev) => updateExpenses(prev, updater))
+              }
             />
           )}
           {tab === "history" && (

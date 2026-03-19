@@ -82,6 +82,7 @@ export function createDemoStateForMonth(year, monthIndex) {
       createdAt: iso(6, 19),
       updatedAt: iso(6, 19),
       totalInstallments: 1,
+      category: "alimentacao",
     },
     {
       id: "exp-combustivel",
@@ -93,6 +94,7 @@ export function createDemoStateForMonth(year, monthIndex) {
       createdAt: iso(9, 8),
       updatedAt: iso(9, 8),
       totalInstallments: 1,
+      category: "carro",
     },
 
     // Parcelado 5x, estamos na 3ª de 5
@@ -108,6 +110,7 @@ export function createDemoStateForMonth(year, monthIndex) {
       totalInstallments: 5,
       firstInvoiceMonthIndex: month - 2,
       firstInvoiceYear: year,
+      category: "compras",
     },
 
     // Parcelado 3x, estamos na 2ª de 3
@@ -123,6 +126,7 @@ export function createDemoStateForMonth(year, monthIndex) {
       totalInstallments: 3,
       firstInvoiceMonthIndex: month - 1,
       firstInvoiceYear: year,
+      category: "casa",
     },
 
     // Parcelado 2x, estamos na 1ª de 2
@@ -138,6 +142,7 @@ export function createDemoStateForMonth(year, monthIndex) {
       totalInstallments: 2,
       firstInvoiceMonthIndex: month,
       firstInvoiceYear: year,
+      category: "compras",
     },
 
     // Despesas menores no mês atual
@@ -151,6 +156,7 @@ export function createDemoStateForMonth(year, monthIndex) {
       createdAt: iso(14, 21),
       updatedAt: iso(14, 21),
       totalInstallments: 1,
+      category: "alimentacao",
     },
     {
       id: "exp-spotify",
@@ -162,6 +168,7 @@ export function createDemoStateForMonth(year, monthIndex) {
       createdAt: iso(2, 7),
       updatedAt: iso(2, 7),
       totalInstallments: 1,
+      category: "lazer",
     },
   ];
 

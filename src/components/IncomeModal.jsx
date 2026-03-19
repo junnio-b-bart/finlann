@@ -15,6 +15,7 @@ export default function IncomeModal({ onClose, onSave }) {
   const [customTypes, setCustomTypes] = useState([]);
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [newTypeName, setNewTypeName] = useState("");
+  const [hasTyped, setHasTyped] = useState(false);
 
   const incomeTypes = [...baseIncomeTypes, ...customTypes];
 
@@ -106,7 +107,11 @@ export default function IncomeModal({ onClose, onSave }) {
 
   return (
     <>
-      <Overlay onClose={onClose} kind="income">
+      <Overlay
+        onClose={onClose}
+        kind="income"
+        closeOnBackdrop={!hasTyped}
+      >
         <header className="finlann-modal__header">
           <div>
             <p className="finlann-modal__eyebrow">Nova entrada</p>
@@ -121,7 +126,10 @@ export default function IncomeModal({ onClose, onSave }) {
               className="finlann-field__input"
               placeholder="Ex.: salário, diária hotel, freela..."
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                if (!hasTyped && e.target.value !== "") setHasTyped(true);
+                setDescription(e.target.value);
+              }}
             />
           </div>
 
@@ -132,7 +140,10 @@ export default function IncomeModal({ onClose, onSave }) {
               placeholder="R$ 0,00"
               inputMode="decimal"
               value={amount}
-              onChange={handleAmountChange}
+              onChange={(e) => {
+                if (!hasTyped && e.target.value !== "") setHasTyped(true);
+                handleAmountChange(e);
+              }}
               onBlur={handleAmountBlur}
               onKeyDown={handleAmountKeyDown}
             />
@@ -176,7 +187,10 @@ export default function IncomeModal({ onClose, onSave }) {
               className="finlann-field__input"
               placeholder="Ex.: hotel, trabalho fixo, cliente X..."
               value={origin}
-              onChange={(e) => setOrigin(e.target.value)}
+              onChange={(e) => {
+                if (!hasTyped && e.target.value !== "") setHasTyped(true);
+                setOrigin(e.target.value);
+              }}
             />
           </div>
         </div>

@@ -40,6 +40,7 @@ export default function CardStatementModal({
   onAddExpense,
   onRemoveExpenses,
   onTransferExpenses,
+  onUpdateExpenses,
 }) {
   const [showEditCard, setShowEditCard] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -418,12 +419,23 @@ export default function CardStatementModal({
 
       {editingExpense && (
         <ExpenseModal
-          onClose={() => setEditingExpense(null)}
-          onSave={(updatedExpense) => {
-            // reaproveita onAddExpense / onRemoveExpenses não existem ainda para update direto; aqui ideal seria um onUpdateExpenses global
-            // Por enquanto, apenas fecha; lógica de update pode ser ligada depois via prop específica
-            onAddExpense?.(updatedExpense);
+          onClose={() => {
             setEditingExpense(null);
+            // ao fechar o modal de edição, limpa seleção e sai do modo seleção
+            clearSelection();
+          }}
+          onSave={(updatedExpense) => {
+            // Atualiza a despesa existente em vez de criar uma nova
+            onUpdateExpenses?.((expense) => {
+              if (expense.id !== editingExpense.id) return undefined;
+              return {
+                ...expense,
+                ...updatedExpense,
+              };
+            });
+            setEditingExpense(null);
+            // após salvar, também limpa seleção e volta ao modo normal
+            clearSelection();
           }}
           onAddCard={null}
           existingCards={allCards}
@@ -433,6 +445,7 @@ export default function CardStatementModal({
           allowDateEdit
           initialDate={(editingExpense.purchaseDate || editingExpense.createdAt)
             .slice(0, 10)}
+          initialExpense={editingExpense}
         />
       )}
     </>

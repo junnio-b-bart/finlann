@@ -38,23 +38,44 @@ export default function ExpenseModal({
   lockCardId = null,
   allowDateEdit = false,
   initialDate = null,
+  // quando presente, entra em modo edição de uma despesa existente
+  initialExpense = null,
 }) {
-  const [paymentType, setPaymentType] = useState(initialPaymentType);
-  const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
+  const [paymentType, setPaymentType] = useState(
+    initialExpense?.method || initialPaymentType
+  );
+  const [amount, setAmount] = useState(
+    initialExpense
+      ? initialExpense.amount.toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        })
+      : ""
+  );
+  const [description, setDescription] = useState(initialExpense?.description || "");
   const [purchaseDate, setPurchaseDate] = useState(
-    initialDate || new Date().toISOString().slice(0, 10)
+    (initialExpense?.purchaseDate || initialExpense?.createdAt || initialDate || new Date())
+      .toString()
+      .slice(0, 10)
   );
   const [hasTypedDescription, setHasTypedDescription] = useState(false);
   const [hasTypedAmount, setHasTypedAmount] = useState(false);
   const [showCardModal, setShowCardModal] = useState(false);
-  const [selectedCardId, setSelectedCardId] = useState(lastUsedCardId || "");
-  const [selectedInstallment, setSelectedInstallment] = useState("vista");
-  const [isFixed, setIsFixed] = useState(false);
+  const [selectedCardId, setSelectedCardId] = useState(
+    initialExpense?.cardId || lastUsedCardId || ""
+  );
+  const [selectedInstallment, setSelectedInstallment] = useState(
+    initialExpense?.totalInstallments && initialExpense.totalInstallments > 1
+      ? String(initialExpense.totalInstallments)
+      : "vista"
+  );
+  const [isFixed, setIsFixed] = useState(!!initialExpense?.isFixed);
 
   // categorias de saída (local, sem backend ainda)
   const [categories, setCategories] = useState(defaultCategories);
-  const [selectedCategoryId, setSelectedCategoryId] = useState("outros");
+  const [selectedCategoryId, setSelectedCategoryId] = useState(
+    initialExpense?.category || "outros"
+  );
 
   const creditCards = (existingCards || []).filter(
     (c) => !c.kind || c.kind === "credit"
@@ -182,8 +203,12 @@ export default function ExpenseModal({
 
     const nowIso = new Date().toISOString();
 
+    const expenseBase = initialExpense || {};
+
     const expense = {
-      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      ...expenseBase,
+      id:
+        expenseBase.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       description: description.trim(),
       amount: numericAmount,
       method: paymentType, // credit, debit, pix, cash
@@ -197,7 +222,7 @@ export default function ExpenseModal({
       firstInvoiceYear: baseDate.getFullYear(),
       category: selectedCategoryId,
 
-      createdAt: nowIso,
+      createdAt: expenseBase.createdAt || nowIso,
       updatedAt: nowIso,
     };
 
@@ -358,14 +383,15 @@ export default function ExpenseModal({
           </div>
 
           <div className="finlann-field finlann-field--inline">
-            <label className="finlann-field__label">Despesa fixa</label>
             <label className="finlann-field__switch-label">
               <input
                 type="checkbox"
                 checked={isFixed}
                 onChange={(e) => setIsFixed(e.target.checked)}
               />
-              <span>Marcar como gasto fixo (todo mês)</span>
+              <span className="finlann-field__label" style={{ marginLeft: 6 }}>
+                Despesa fixa (todo mês)
+              </span>
             </label>
           </div>
 

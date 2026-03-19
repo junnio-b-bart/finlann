@@ -17,10 +17,17 @@ function formatDate(isoString) {
   return `${day}/${month}`;
 }
 
-export default function IncomeStatementModal({ typeLabel, typeId, incomes, onClose, onRemoveIncomes }) {
+export default function IncomeStatementModal({ typeLabel, typeId, incomes, onClose, onRemoveIncomes, onUpdateIncomes }) {
   const total = incomes.reduce((acc, i) => acc + i.amount, 0);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+
+  // Edição de uma entrada específica
+  const [editingIncome, setEditingIncome] = useState(null);
+  const [editDescription, setEditDescription] = useState("");
+  const [editAmount, setEditAmount] = useState("");
+  const [editOrigin, setEditOrigin] = useState("");
+  const [hasEditTyped, setHasEditTyped] = useState(false);
 
   function toggleSelected(id) {
     setSelectedIds((prev) =>
@@ -35,7 +42,56 @@ export default function IncomeStatementModal({ typeLabel, typeId, incomes, onClo
 
   const selectionIcon = selectionMode ? "☑" : "☐";
 
+  function openEditForSelected() {
+    if (selectedIds.length !== 1) {
+      // por enquanto, edição só funciona com uma entrada selecionada
+      return;
+    }
+    const income = incomes.find((i) => i.id === selectedIds[0]);
+    if (!income) return;
+    setEditingIncome(income);
+    setEditDescription(income.description || "");
+    setEditOrigin(income.origin || "");
+    setHasEditTyped(false);
+    // mostra já em formato de dinheiro
+    setEditAmount(
+      income.amount.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      })
+    );
+  }
+
+  function handleSaveEdit() {
+    if (!editingIncome) return;
+    const raw = editAmount
+      .replace(/[^0-9,\.]/g, "")
+      .replace(/\./g, "")
+      .replace(/,/g, ".");
+    const numericAmount = Number(raw);
+    if (Number.isNaN(numericAmount) || numericAmount <= 0) {
+      return;
+    }
+    const desc = editDescription.trim();
+    const origin = editOrigin.trim();
+
+    onUpdateIncomes?.((income) => {
+      if (income.id !== editingIncome.id) return undefined;
+      return {
+        ...income,
+        description: desc || income.description,
+        origin: origin,
+        amount: numericAmount,
+        updatedAt: new Date().toISOString(),
+      };
+    });
+
+    setEditingIncome(null);
+    clearSelection();
+  }
+
   return (
+    <>
     <Overlay onClose={onClose} kind="income">
       <header className="finlann-modal__header" style={{ alignItems: "stretch" }}>
         <div
@@ -170,10 +226,8 @@ export default function IncomeStatementModal({ typeLabel, typeId, incomes, onClo
             <button
               type="button"
               className="finlann-modal__secondary"
-              disabled={selectedIds.length === 0}
-              onClick={() => {
-                alert("Edição de entrada individual ainda será implementada.");
-              }}
+              disabled={selectedIds.length !== 1}
+              onClick={openEditForSelected}
             >
               Editar
             </button>
@@ -181,5 +235,78 @@ export default function IncomeStatementModal({ typeLabel, typeId, incomes, onClo
         )}
       </footer>
     </Overlay>
+
+    {editingIncome && (
+      <Overlay
+        onClose={() => setEditingIncome(null)}
+        kind="income"
+        closeOnBackdrop={!hasEditTyped}
+      >
+        <header className="finlann-modal__header">
+          <div>
+            <p className="finlann-modal__eyebrow">Editar entrada</p>
+            <h2 className="finlann-modal__title">Ajustar dados</h2>
+          </div>
+        </header>
+
+        <div className="finlann-modal__body">
+          <div className="finlann-field">
+            <label className="finlann-field__label">Descrição</label>
+            <input
+              className="finlann-field__input"
+              value={editDescription}
+              onChange={(e) => {
+                if (!hasEditTyped && e.target.value !== "") setHasEditTyped(true);
+                setEditDescription(e.target.value);
+              }}
+            />
+          </div>
+
+          <div className="finlann-field finlann-field--amount">
+            <label className="finlann-field__label">Valor</label>
+            <input
+              className="finlann-field__input finlann-field__input--amount"
+              placeholder="R$ 0,00"
+              inputMode="decimal"
+              value={editAmount}
+              onChange={(e) => {
+                if (!hasEditTyped && e.target.value !== "") setHasEditTyped(true);
+                setEditAmount(e.target.value);
+              }}
+            />
+          </div>
+
+          <div className="finlann-field">
+            <label className="finlann-field__label">Origem</label>
+            <input
+              className="finlann-field__input"
+              value={editOrigin}
+              onChange={(e) => {
+                if (!hasEditTyped && e.target.value !== "") setHasEditTyped(true);
+                setEditOrigin(e.target.value);
+              }}
+            />
+          </div>
+        </div>
+
+        <footer className="finlann-modal__footer">
+          <button
+            type="button"
+            className="finlann-modal__secondary"
+            onClick={() => setEditingIncome(null)}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="finlann-modal__primary"
+            onClick={handleSaveEdit}
+          >
+            Salvar alterações
+          </button>
+        </footer>
+      </Overlay>
+    )}
+    </>
   );
 }

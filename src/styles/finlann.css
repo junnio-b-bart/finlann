@@ -277,11 +277,8 @@
   width: 210px;
   height: 210px;
   border-radius: 50%;
-  background: conic-gradient(
-    rgba(37, 99, 235, 0.8) 0 40%,
-    rgba(22, 163, 74, 0.8) 40% 70%,
-    rgba(234, 179, 8, 0.8) 70% 100%
-  );
+  /* Cor base suave; segmentos reais vêm do inline style (chartStyle) */
+  background: radial-gradient(circle at center, #1e293b 0, #020617 70%);
   box-shadow: var(--shadow-subtle);
 }
 
@@ -1070,10 +1067,10 @@
 
 .finlann-statement-row {
   display: grid;
-  /* aumenta um pouco a coluna de parcelas e o espaçamento para afastar do valor */
-  grid-template-columns: 44px minmax(0, 1fr) 64px 72px;
+  /* agora: Data | Descrição | Origem | Parc. | Valor */
+  grid-template-columns: 44px minmax(0, 1fr) 80px 56px 72px;
   align-items: center;
-  column-gap: 10px;
+  column-gap: 8px;
   row-gap: 4px;
   padding: 4px 6px;
   font-size: var(--font-size-xs);

@@ -40,6 +40,7 @@ export default function Dashboard({
   onTransferExpenses,
   onRemoveIncomes,
   onUpdateIncomes,
+  onUpdateExpenses,
 }) {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showIncomeModal, setShowIncomeModal] = useState(false);
@@ -47,6 +48,7 @@ export default function Dashboard({
   const [statementIncomeType, setStatementIncomeType] = useState(null);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [showFixedStatement, setShowFixedStatement] = useState(false);
+  const [categoryStatement, setCategoryStatement] = useState(null); // { id, label }
 
   // Controle de retrátil para resumos
   const [showIncomeSummary, setShowIncomeSummary] = useState(true);
@@ -65,6 +67,57 @@ export default function Dashboard({
 
   const format = (value) =>
     value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  // Gera o estilo dinâmico do gráfico de pizza a partir das categorias do mês
+  const categoryEntries = Object.entries(summary.expensesByCategory || {}).filter(
+    ([, total]) => total > 0
+  );
+  const totalCategoriesAmount = categoryEntries.reduce(
+    (acc, [, total]) => acc + total,
+    0
+  );
+
+  const categoryColors = {
+    alimentacao: "#22c55e",
+    carro: "#3b82f6",
+    lazer: "#f97316",
+    compras: "#a855f7",
+    investimentos: "#eab308",
+    casa: "#38bdf8",
+    saude: "#ef4444",
+    outros: "#6b7280",
+  };
+
+  let chartStyle = undefined;
+  if (categoryEntries.length > 0 && totalCategoriesAmount > 0) {
+    // ordena por maior valor
+    const sorted = [...categoryEntries].sort((a, b) => b[1] - a[1]);
+    // pega no máximo 5 categorias, o resto vira "outros"
+    const top = sorted.slice(0, 5);
+    const rest = sorted.slice(5);
+    const segments = [];
+    let accumulated = 0;
+
+    for (const [categoryId, total] of top) {
+      const color = categoryColors[categoryId] || "#64748b";
+      const start = (accumulated / totalCategoriesAmount) * 100;
+      accumulated += total;
+      const end = (accumulated / totalCategoriesAmount) * 100;
+      segments.push(`${color} ${start.toFixed(2)}% ${end.toFixed(2)}%`);
+    }
+
+    if (rest.length > 0) {
+      const restTotal = rest.reduce((acc, [, t]) => acc + t, 0);
+      const color = categoryColors.outros;
+      const start = (accumulated / totalCategoriesAmount) * 100;
+      const end = ((accumulated + restTotal) / totalCategoriesAmount) * 100;
+      segments.push(`${color} ${start.toFixed(2)}% ${end.toFixed(2)}%`);
+    }
+
+    chartStyle = {
+      background: `conic-gradient(${segments.join(", ")})`,
+    };
+  }
 
   return (
     <div className="finlann-dashboard">
@@ -120,7 +173,10 @@ export default function Dashboard({
                 className="finlann-fixed-summary__chart-button"
                 onClick={() => setShowFixedStatement(true)}
               >
-                <div className="finlann-fixed-summary__chart" />
+                <div
+                  className="finlann-fixed-summary__chart"
+                  style={chartStyle}
+                />
               </button>
             </div>
           </section>
@@ -299,23 +355,52 @@ export default function Dashboard({
                 Gastos fixos
               </h2>
               <span className="finlann-section__tag">
-                {showFixedSummarySection ? "Recolher" : "Em breve"}
+                {showFixedSummarySection ? "Recolher" : "Mês atual"}
               </span>
             </header>
 
             {showFixedSummarySection && (
               <div className="finlann-list">
-                <div className="finlann-list-item" style={{ opacity: 0.7 }}>
-                  <div className="finlann-list-item__left">
-                    <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
-                    <div>
-                      <p className="finlann-list-item__title">Gastos fixos do mês</p>
-                      <p className="finlann-list-item__subtitle">
-                        Em breve: sua lista de assinaturas, aluguel, contas recorrentes…
-                      </p>
+                {financeState.expenses.filter((e) => {
+                  if (!e.isFixed) return false;
+                  const refDate = e.purchaseDate || e.createdAt;
+                  return isSameMonthYear(refDate, currentMonthIndex, currentYear);
+                }).length === 0 && (
+                  <div className="finlann-list-item" style={{ opacity: 0.7 }}>
+                    <div className="finlann-list-item__left">
+                      <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
+                      <div>
+                        <p className="finlann-list-item__title">Nenhum gasto fixo ainda</p>
+                        <p className="finlann-list-item__subtitle">
+                          Marque saídas como fixas para vê-las aqui todo mês.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {financeState.expenses
+                  .filter((e) => {
+                    if (!e.isFixed) return false;
+                    const refDate = e.purchaseDate || e.createdAt;
+                    return isSameMonthYear(refDate, currentMonthIndex, currentYear);
+                  })
+                  .map((expense) => (
+                    <div key={expense.id} className="finlann-list-item">
+                      <div className="finlann-list-item__left">
+                        <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
+                        <div>
+                          <p className="finlann-list-item__title">{expense.description || "(sem descrição)"}</p>
+                          <p className="finlann-list-item__subtitle">Gasto fixo deste mês</p>
+                        </div>
+                      </div>
+                      <div className="finlann-list-item__right">
+                        <span className="finlann-list-item__value finlann-list-item__value--negative">
+                          {format(expense.amount)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
               </div>
             )}
           </section>
@@ -379,6 +464,7 @@ export default function Dashboard({
           onAddExpense={onAddExpense}
           onRemoveExpenses={onRemoveExpenses}
           onTransferExpenses={onTransferExpenses}
+          onUpdateExpenses={onUpdateExpenses}
         />
       )}
 
@@ -391,6 +477,7 @@ export default function Dashboard({
           )}
           onClose={() => setStatementIncomeType(null)}
           onRemoveIncomes={onRemoveIncomes}
+          onUpdateIncomes={onUpdateIncomes}
         />
       )}
 
@@ -458,7 +545,7 @@ export default function Dashboard({
                         key={categoryId}
                         type="button"
                         className="finlann-list-item"
-                        // TODO: ao clicar, abrir extrato da categoria (gasolina, pedágio, etc.)
+                        onClick={() => setCategoryStatement({ id: categoryId, label })}
                       >
                         <div className="finlann-list-item__left">
                           <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
@@ -491,6 +578,95 @@ export default function Dashboard({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {categoryStatement && (
+        <div className="finlann-overlay">
+          <div className="finlann-overlay__panel finlann-overlay__panel--expense">
+            <header className="finlann-modal__header">
+              <p className="finlann-modal__eyebrow">Saídas por categoria</p>
+              <h2 className="finlann-modal__title">{categoryStatement.label}</h2>
+            </header>
+            <div className="finlann-modal__body finlann-modal__body--scroll">
+              <div className="finlann-statement-table">
+                <div className="finlann-statement-row finlann-statement-row--header">
+                  <span>Data</span>
+                  <span>Descrição</span>
+                  <span>Origem</span>
+                  <span>Parc.</span>
+                  <span>Valor</span>
+                </div>
+
+                {financeState.expenses
+                  .filter((e) => {
+                    if (e.category !== categoryStatement.id) return false;
+                    const refDate = e.purchaseDate || e.createdAt;
+                    return isSameMonthYear(refDate, currentMonthIndex, currentYear);
+                  })
+                  .map((e) => {
+                    const refDate = e.purchaseDate || e.createdAt;
+                    const d = new Date(refDate);
+                    const day = String(d.getDate()).padStart(2, "0");
+                    const month = String(d.getMonth() + 1).padStart(2, "0");
+                    const dateLabel = `${day}/${month}`;
+
+                    const totalInstallments = e.totalInstallments || 1;
+                    const installmentLabel =
+                      totalInstallments === 1
+                        ? "–"
+                        : `${e.installmentNumber || 1}/${totalInstallments}`;
+
+                    const perInstallmentAmount =
+                      totalInstallments === 1
+                        ? e.amount
+                        : e.amount / totalInstallments;
+
+                    // Origem: cartão, Pix, dinheiro, débito
+                    let originLabel = "";
+                    if (e.method === "credit" || e.method === "debit") {
+                      const card = financeState.cards.find((c) => c.id === e.cardId);
+                      originLabel = card?.label || (e.method === "credit" ? "Crédito" : "Débito");
+                    } else if (e.method === "pix") {
+                      originLabel = "Pix";
+                    } else if (e.method === "cash") {
+                      originLabel = "Dinheiro";
+                    } else {
+                      originLabel = "–";
+                    }
+
+                    return (
+                      <div key={e.id} className="finlann-statement-row">
+                        <span>{dateLabel}</span>
+                        <span className="finlann-statement-desc">
+                          {e.description || "(sem descrição)"}
+                        </span>
+                        <span className="finlann-statement-desc">{originLabel}</span>
+                        <span style={{ textAlign: "center" }}>{installmentLabel}</span>
+                        <span className="finlann-value-cell">
+                          <span className="finlann-value-prefix">R$</span>
+                          <span className="finlann-value-number">
+                            {perInstallmentAmount.toLocaleString("pt-BR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                        </span>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+            <footer className="finlann-modal__footer">
+              <button
+                type="button"
+                className="finlann-modal__secondary"
+                onClick={() => setCategoryStatement(null)}
+              >
+                Voltar
+              </button>
+            </footer>
           </div>
         </div>
       )}
