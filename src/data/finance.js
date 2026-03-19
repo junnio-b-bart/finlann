@@ -316,6 +316,16 @@ export function getMonthlySummary(state, monthIndex, year) {
     0
   );
 
+  // Resumo por categoria (para balanço de saídas)
+  const expensesByCategory = {};
+
+  for (const e of state.expenses) {
+    const createdAt = e.purchaseDate || e.createdAt;
+    if (!isSameMonthYear(createdAt, monthIndex, year)) continue;
+    const categoryKey = e.category || "outros";
+    expensesByCategory[categoryKey] = (expensesByCategory[categoryKey] || 0) + e.amount;
+  }
+
   const balance = totalIncomes - totalExpenses;
 
   return {
@@ -324,5 +334,6 @@ export function getMonthlySummary(state, monthIndex, year) {
     balance,
     expensesByCard,
     incomesByType,
+    expensesByCategory,
   };
 }

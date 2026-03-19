@@ -16,6 +16,17 @@ const debitCards = [
 
 const installments = [1, 2, 3, 4, 5, 6, 8, 10, 12];
 
+const defaultCategories = [
+  { id: "alimentacao", label: "Alimentação" },
+  { id: "carro", label: "Carro" },
+  { id: "lazer", label: "Lazer" },
+  { id: "compras", label: "Compras" },
+  { id: "investimentos", label: "Investimentos" },
+  { id: "casa", label: "Casa" },
+  { id: "saude", label: "Saúde" },
+  { id: "outros", label: "Outros" },
+];
+
 export default function ExpenseModal({
   onClose,
   onSave,
@@ -40,6 +51,10 @@ export default function ExpenseModal({
   const [selectedCardId, setSelectedCardId] = useState(lastUsedCardId || "");
   const [selectedInstallment, setSelectedInstallment] = useState("vista");
   const [isFixed, setIsFixed] = useState(false);
+
+  // categorias de saída (local, sem backend ainda)
+  const [categories, setCategories] = useState(defaultCategories);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("outros");
 
   const creditCards = (existingCards || []).filter(
     (c) => !c.kind || c.kind === "credit"
@@ -180,6 +195,7 @@ export default function ExpenseModal({
       purchaseDate: baseDate.toISOString(),
       firstInvoiceMonthIndex: baseDate.getMonth(),
       firstInvoiceYear: baseDate.getFullYear(),
+      category: selectedCategoryId,
 
       createdAt: nowIso,
       updatedAt: nowIso,
@@ -351,6 +367,53 @@ export default function ExpenseModal({
               />
               <span>Marcar como gasto fixo (todo mês)</span>
             </label>
+          </div>
+
+          <div className="finlann-field">
+            <label className="finlann-field__label">Categoria</label>
+            <div className="finlann-chips">
+              {categories.map((cat) => {
+                const active = cat.id === selectedCategoryId;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    className={
+                      "finlann-chip " +
+                      (active ? "finlann-chip--solid is-active" : "finlann-chip--outline")
+                    }
+                    onClick={() => setSelectedCategoryId(cat.id)}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                className="finlann-chip finlann-chip--outline"
+                onClick={() => {
+                  const label = window.prompt("Nome da nova categoria:");
+                  if (!label) return;
+                  const id = label
+                    .normalize("NFD")
+                    .replace(/[^\w\s-]/g, "")
+                    .trim()
+                    .toLowerCase()
+                    .replace(/\s+/g, "_");
+                  if (!id) return;
+                  // evita duplicar
+                  if (categories.some((c) => c.id === id)) {
+                    setSelectedCategoryId(id);
+                    return;
+                  }
+                  const next = [...categories, { id, label: label.trim() }];
+                  setCategories(next);
+                  setSelectedCategoryId(id);
+                }}
+              >
+                +
+              </button>
+            </div>
           </div>
 
           {showCreditFields && (

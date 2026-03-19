@@ -426,8 +426,33 @@
   margin-bottom: 8px;
 }
 
+/* versão clicável para seções retráteis (mostra cursor + hover) */
+.finlann-section__header--clickable {
+  cursor: pointer;
+}
+
+.finlann-section__header--clickable:hover .finlann-section__title {
+  color: #e5e7eb;
+}
+
 .finlann-section__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px; /* mais espaço entre seta e título */
   font-size: var(--font-size-lg);
+}
+
+.finlann-section__chevron {
+  display: inline-block;
+  font-size: 18px; /* um pouco maior pra destacar mais */
+  color: inherit; /* mesma cor do título */
+  transform-origin: center;
+  transition: transform 160ms ease-out, color 160ms ease-out;
+}
+
+.finlann-section__chevron.is-open {
+  transform: rotate(90deg);
+  color: #e5e7eb;
 }
 
 /* títulos principais de página (Config, Histórico) um pouco maiores, mas não gigantes */
