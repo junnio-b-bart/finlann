@@ -17,6 +17,7 @@ export default function Settings({
   onDeleteCard,
   onSyncState,
   onResetState,
+  onSettingsToast,
 }) {
   const exported = exportState(financeState);
 
@@ -127,7 +128,7 @@ export default function Settings({
           <h2 className="finlann-section__title">Conta</h2>
         </header>
 
-        <div className="finlann-settings-profile-row">
+        <div className="finlann-settings-profile-row" style={{ gap: 6 }}>
           <div className="finlann-settings-avatar">
             <span className="finlann-settings-avatar__circle finlann-settings-avatar__circle--large">
               F
@@ -146,31 +147,25 @@ export default function Settings({
                 : "Abra ou acesse uma conta Finlann para sincronizar seus dados."}
             </p>
           </div>
-        </div>
 
-        <div
-          className="finlann-settings-actions-bar"
-          style={currentAccount ? { flexDirection: "column", alignItems: "flex-start", gap: 8 } : undefined}
-        >
           {currentAccount && (
-            <div className="finlann-settings-actions-row" style={{ width: "100%", gap: 8 }}>
+            <div className="finlann-settings-actions-bar__right" style={{ alignSelf: "center" }}>
               <button
                 type="button"
-                className="finlann-chip finlann-chip--outline"
-                style={{ width: 260 }}
-                onClick={() => {
-                  window.alert("Edição de dados da conta ainda não está disponível.");
-                }}
-              >
-                Editar conta
-              </button>
-              <button
-                type="button"
-                className="finlann-chip finlann-chip--outline"
+                className="finlann-settings-sync-button"
                 onClick={async () => {
                   try {
+                    // 1) Sobe o estado atual deste dispositivo para o backend
                     await saveStateToBackend(financeState, currentAccount.user_id);
+
+                    // 2) Busca o estado mais recente do backend para esta conta
+                    const remote = await loadStateFromBackend(currentAccount.user_id);
+                    if (remote && onSyncState) {
+                      onSyncState(remote);
+                    }
+
                     setShowSyncSuccess(true);
+                    onSettingsToast?.("Dados sincronizados com a conta.", "success");
                   } catch (e) {
                     console.error("[Finlann] Erro ao forçar sync com backend:", e);
                     setModalError("Não foi possível sincronizar agora. Tente novamente.");
@@ -182,7 +177,12 @@ export default function Settings({
               </button>
             </div>
           )}
+        </div>
 
+        <div
+          className="finlann-settings-actions-bar"
+          style={currentAccount ? { flexDirection: "row", alignItems: "center", gap: 8 } : { width: "100%", maxWidth: 520, gap: 8 }}
+        >
           {!currentAccount ? (
             <div className="finlann-settings-actions-row" style={{ width: "100%", maxWidth: 520, gap: 8 }}>
               <button
@@ -203,20 +203,28 @@ export default function Settings({
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              className="finlann-chip finlann-chip--outline finlann-settings-actions-bar__left"
-              style={{
-                width: 260,
-                borderColor: "#f97373",
-                color: "#f97373",
-              }}
-              onClick={() => {
-                setShowLogoutConfirm(true);
-              }}
-            >
-              Sair da conta
-            </button>
+            <div className="finlann-settings-actions-row" style={{ width: "100%", gap: 8 }}>
+              <button
+                type="button"
+                className="finlann-chip finlann-chip--outline"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  setShowEditAccountModal(true);
+                }}
+              >
+                Editar conta
+              </button>
+              <button
+                type="button"
+                className="finlann-chip finlann-chip--outline"
+                style={{ flex: 1, borderColor: "#f97373", color: "#f97373" }}
+                onClick={() => {
+                  setShowLogoutConfirm(true);
+                }}
+              >
+                Sair da conta
+              </button>
+            </div>
           )}
         </div>
       </section>
@@ -358,7 +366,7 @@ export default function Settings({
           >
             <header className="finlann-modal__header">
               <h2 className="finlann-modal__title">
-                {accountModalMode === "create" ? "Nova conta" : "Fazer login na conta Finlann"}
+                {accountModalMode === "create" ? "Nova conta" : "Fazer login"}
               </h2>
             </header>
 
@@ -478,23 +486,49 @@ export default function Settings({
 
                 {modalHasPassword && (
                   <>
-                    <input
-                      type="password"
-                      className="finlann-field__input"
-                      placeholder="Senha"
-                      value={modalPassword}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setModalPassword(value);
-                        const len = value.length;
-                        let strength = "none";
-                        if (len > 0 && len <= 4) strength = "weak";
-                        else if (len >= 5 && len <= 7) strength = "medium";
-                        else if (len >= 8) strength = "strong";
-                        setModalPasswordStrength(strength);
-                        setModalError("");
-                      }}
-                    />
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input
+                        id="finlann-login-password-input"
+                        type="password"
+                        className="finlann-field__input"
+                        placeholder="Senha"
+                        value={modalPassword}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setModalPassword(value);
+                          const len = value.length;
+                          let strength = "none";
+                          if (len > 0 && len <= 4) strength = "weak";
+                          else if (len >= 5 && len <= 7) strength = "medium";
+                          else if (len >= 8) strength = "strong";
+                          setModalPasswordStrength(strength);
+                          setModalError("");
+                        }}
+                      />
+                      {/* Olhinho para mostrar/ocultar senha */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const input = document.getElementById("finlann-login-password-input");
+                          if (!input) return;
+                          input.type = input.type === "password" ? "text" : "password";
+                        }}
+                        style={{
+                          borderRadius: 999,
+                          border: "1px solid rgba(148,163,184,0.5)",
+                          width: 32,
+                          height: 32,
+                          background: "transparent",
+                          color: "#e5e7eb",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 14,
+                        }}
+                      >
+                        👁
+                      </button>
+                    </div>
 
                     {/* Força da senha (só na criação) */}
                     {accountModalMode === "create" && (
@@ -553,7 +587,7 @@ export default function Settings({
                 )}
               </div>
 
-              {modalHasPassword && (
+              {accountModalMode === "create" && modalHasPassword && (
                 <div style={{ marginBottom: 12 }}>
                   <label
                     className="finlann-settings-profile-subtitle"

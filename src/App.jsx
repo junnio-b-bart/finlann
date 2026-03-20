@@ -306,6 +306,9 @@ export default function App() {
                 }
                 setFinanceState(createInitialState());
               }}
+              onSettingsToast={(message, kind = "success") =>
+                setToast({ message, kind })
+              }
             />
           )}
         </main>

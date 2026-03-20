@@ -61,6 +61,9 @@ export default function Dashboard({
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
 
   const summary = getMonthlySummary(financeState, currentMonthIndex, currentYear);
+
+  // DEBUG TEMPORÁRIO: ajuda a entender por que o resumo de saídas está zerado
+  const debugFirstExpense = financeState.expenses[0] || null;
   const lastCreditExpense = [...financeState.expenses]
     .filter((e) => e.method === "credit" && e.cardId)
     .slice(-1)[0];
@@ -117,6 +120,13 @@ export default function Dashboard({
 
     chartStyle = {
       background: `conic-gradient(${segments.join(", ")})`,
+    };
+  } else {
+    // placeholder quando ainda não há nenhuma saída no mês
+    chartStyle = {
+      background:
+        "conic-gradient(#22c55e 0% 33%, #3b82f6 33% 66%, #eab308 66% 100%)",
+      opacity: 0.5,
     };
   }
 
@@ -290,19 +300,69 @@ export default function Dashboard({
 
             {showExpenseSummary && (
               <div className="finlann-list">
-                {financeState.cards.length === 0 && (
-                  <div className="finlann-list-item" style={{ opacity: 0.7 }}>
-                    <div className="finlann-list-item__left">
-                      <span className="finlann-list-item__avatar finlann-list-item__avatar--credit" />
-                      <div>
-                        <p className="finlann-list-item__title">Nenhum cartão ainda</p>
-                        <p className="finlann-list-item__subtitle">
-                          Crie seu primeiro cartão na hora de registrar uma saída
-                        </p>
+                {financeState.cards.length === 0 &&
+                  Object.keys(summary.expensesByCategory || {}).length === 0 && (
+                    <div className="finlann-list-item" style={{ opacity: 0.7 }}>
+                      <div className="finlann-list-item__left">
+                        <span className="finlann-list-item__avatar finlann-list-item__avatar--credit" />
+                        <div>
+                          <p className="finlann-list-item__title">Nenhum cartão ainda</p>
+                          <p className="finlann-list-item__subtitle">
+                            Crie seu primeiro cartão na hora de registrar uma saída
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+
+                {/* Quando não há cartões, mas já existem saídas categorizadas,
+                    mostramos um resumo por categoria direto aqui */}
+                {financeState.cards.length === 0 &&
+                  Object.keys(summary.expensesByCategory || {}).length > 0 &&
+                  Object.entries(summary.expensesByCategory || {}).map(
+                    ([categoryId, total]) => {
+                      const label =
+                        categoryId === "alimentacao"
+                          ? "Alimentação"
+                          : categoryId === "carro"
+                          ? "Carro"
+                          : categoryId === "lazer"
+                          ? "Lazer"
+                          : categoryId === "compras"
+                          ? "Compras"
+                          : categoryId === "investimentos"
+                          ? "Investimentos"
+                          : categoryId === "casa"
+                          ? "Casa"
+                          : categoryId === "saude"
+                          ? "Saúde"
+                          : categoryId === "outros"
+                          ? "Outros"
+                          : categoryId
+                              .split("_")
+                              .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+                              .join(" ");
+
+                      return (
+                        <div key={categoryId} className="finlann-list-item">
+                          <div className="finlann-list-item__left">
+                            <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
+                            <div>
+                              <p className="finlann-list-item__title">{label}</p>
+                              <p className="finlann-list-item__subtitle">
+                                Saídas do mês nesta categoria
+                              </p>
+                            </div>
+                          </div>
+                          <div className="finlann-list-item__right">
+                            <span className="finlann-list-item__value finlann-list-item__value--negative">
+                              {format(total)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    }
+                  )}
 
                 {financeState.cards.map((card) => {
                   const cardTotal = summary.expensesByCard[card.id] || 0;

@@ -53,11 +53,11 @@ export default function ExpenseModal({
       : ""
   );
   const [description, setDescription] = useState(initialExpense?.description || "");
-  const [purchaseDate, setPurchaseDate] = useState(
-    (initialExpense?.purchaseDate || initialExpense?.createdAt || initialDate || new Date())
-      .toString()
-      .slice(0, 10)
-  );
+  const [purchaseDate, setPurchaseDate] = useState(() => {
+    const raw = initialExpense?.purchaseDate || initialExpense?.createdAt || initialDate || new Date();
+    const baseDate = raw instanceof Date ? raw : new Date(raw);
+    return baseDate.toISOString().slice(0, 10); // yyyy-mm-dd para o input[type=date]
+  });
   const [hasTypedDescription, setHasTypedDescription] = useState(false);
   const [hasTypedAmount, setHasTypedAmount] = useState(false);
   const [showCardModal, setShowCardModal] = useState(false);
@@ -135,10 +135,33 @@ export default function ExpenseModal({
   }
 
   function handleAmountChange(e) {
-    if (!hasTypedAmount && e.target.value !== "") {
+    const raw = e.target.value;
+
+    if (!hasTypedAmount && raw !== "") {
       setHasTypedAmount(true);
     }
-    setAmount(e.target.value);
+
+    // Máscara em tempo real no formato de dinheiro BRL
+    // Mantém só dígitos, assume centavos nos dois últimos
+    const digitsOnly = raw.replace(/\D/g, "");
+
+    if (!digitsOnly) {
+      setAmount("");
+      return;
+    }
+
+    const numeric = Number(digitsOnly) / 100;
+    if (Number.isNaN(numeric)) {
+      setAmount(raw);
+      return;
+    }
+
+    const formatted = numeric.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+
+    setAmount(formatted);
   }
 
   function handlePaymentClick(id) {
@@ -250,6 +273,8 @@ export default function ExpenseModal({
     accentColor = "linear-gradient(to bottom left, #22c55e 0%, #16a34a 40%, #020617 100%)";
   }
 
+  const isEditing = !!initialExpense;
+
   return (
     <>
       <Overlay
@@ -268,8 +293,9 @@ export default function ExpenseModal({
             }}
           >
             <div>
-              <p className="finlann-modal__eyebrow">Nova saída</p>
-              <h2 className="finlann-modal__title">Registrar compra</h2>
+              <h2 className="finlann-modal__title">
+                {isEditing ? "Editar compra" : "Registrar compra"}
+              </h2>
             </div>
             <button
               type="button"
@@ -281,7 +307,7 @@ export default function ExpenseModal({
           </div>
         </header>
 
-        <div className="finlann-modal__body">
+        <div className="finlann-modal__body finlann-modal__body--scroll">
           <div className="finlann-field">
             <label className="finlann-field__label">Descrição</label>
             <input
@@ -302,7 +328,7 @@ export default function ExpenseModal({
               <label className="finlann-field__label">Data da compra</label>
               <input
                 type="date"
-                className="finlann-field__input"
+                className="finlann-field__input finlann-field__input--date-pill"
                 value={purchaseDate}
                 onChange={(e) => setPurchaseDate(e.target.value)}
               />
@@ -323,7 +349,7 @@ export default function ExpenseModal({
           </div>
 
           <div className="finlann-field">
-            <label className="finlann-field__label">Pagamento</label>
+            <label className="finlann-field__label">Forma de pagamento</label>
             <div className="finlann-chips">
               {paymentTypes.map((type) => {
                 const active = type.id === paymentType;
@@ -379,66 +405,6 @@ export default function ExpenseModal({
                   </button>
                 );
               })}
-            </div>
-          </div>
-
-          <div className="finlann-field finlann-field--inline">
-            <label className="finlann-field__switch-label">
-              <input
-                type="checkbox"
-                checked={isFixed}
-                onChange={(e) => setIsFixed(e.target.checked)}
-              />
-              <span className="finlann-field__label" style={{ marginLeft: 6 }}>
-                Despesa fixa (todo mês)
-              </span>
-            </label>
-          </div>
-
-          <div className="finlann-field">
-            <label className="finlann-field__label">Categoria</label>
-            <div className="finlann-chips">
-              {categories.map((cat) => {
-                const active = cat.id === selectedCategoryId;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    className={
-                      "finlann-chip " +
-                      (active ? "finlann-chip--solid is-active" : "finlann-chip--outline")
-                    }
-                    onClick={() => setSelectedCategoryId(cat.id)}
-                  >
-                    {cat.label}
-                  </button>
-                );
-              })}
-              <button
-                type="button"
-                className="finlann-chip finlann-chip--outline"
-                onClick={() => {
-                  const label = window.prompt("Nome da nova categoria:");
-                  if (!label) return;
-                  const id = label
-                    .normalize("NFD")
-                    .replace(/[^\w\s-]/g, "")
-                    .trim()
-                    .toLowerCase()
-                    .replace(/\s+/g, "_");
-                  if (!id) return;
-                  // evita duplicar
-                  if (categories.some((c) => c.id === id)) {
-                    setSelectedCategoryId(id);
-                    return;
-                  }
-                  const next = [...categories, { id, label: label.trim() }];
-                  setCategories(next);
-                  setSelectedCategoryId(id);
-                }}
-              >
-                +
-              </button>
             </div>
           </div>
 
@@ -542,6 +508,128 @@ export default function ExpenseModal({
               </div>
             </div>
           )}
+
+          {showDebitFields && (
+            <div className="finlann-conditional">
+              <div className="finlann-field">
+                <label className="finlann-field__label">Cartão de débito</label>
+                {debitCards.length ? (
+                  <div className="finlann-card-row">
+                    <div className="finlann-select finlann-select--compact">
+                      <select
+                        value={effectiveCardId}
+                        onChange={(e) => setSelectedCardId(e.target.value)}
+                      >
+                        {debitCards.map((card) => (
+                          <option key={card.id} value={card.id}>
+                            {card.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {!lockCardId && (
+                      <button
+                        type="button"
+                        className="finlann-card-add"
+                        onClick={() => setShowCardModal(true)}
+                      >
+                        +
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="finlann-card-row">
+                    <span className="finlann-field__label" style={{ opacity: 0.8 }}>
+                      Nenhum cartão de débito cadastrado
+                    </span>
+                    <button
+                      type="button"
+                      className="finlann-card-add"
+                      onClick={() => setShowCardModal(true)}
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {(showPixFields || paymentType === "cash") && (
+            <div className="finlann-conditional">
+              <div className="finlann-field">
+                <label className="finlann-field__label">
+                  {paymentType === "pix"
+                    ? "Quem recebeu o Pix"
+                    : "Onde foi pago em dinheiro"}
+                </label>
+                <input
+                  className="finlann-field__input"
+                  placeholder="Nome da pessoa ou estabelecimento"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="finlann-field">
+            <label className="finlann-field__label">Categoria</label>
+            <div className="finlann-chips">
+              {categories.map((cat) => {
+                const active = cat.id === selectedCategoryId;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    className={
+                      "finlann-chip " +
+                      (active ? "finlann-chip--solid is-active" : "finlann-chip--outline")
+                    }
+                    onClick={() => setSelectedCategoryId(cat.id)}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                className="finlann-chip finlann-chip--outline"
+                onClick={() => {
+                  const label = window.prompt("Nome da nova categoria:");
+                  if (!label) return;
+                  const id = label
+                    .normalize("NFD")
+                    .replace(/[^\w\s-]/g, "")
+                    .trim()
+                    .toLowerCase()
+                    .replace(/\s+/g, "_");
+                  if (!id) return;
+                  // evita duplicar
+                  if (categories.some((c) => c.id === id)) {
+                    setSelectedCategoryId(id);
+                    return;
+                  }
+                  const next = [...categories, { id, label: label.trim() }];
+                  setCategories(next);
+                  setSelectedCategoryId(id);
+                }}
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          <div className="finlann-field finlann-field--inline">
+            <label className="finlann-field__switch-label">
+              <input
+                type="checkbox"
+                checked={isFixed}
+                onChange={(e) => setIsFixed(e.target.checked)}
+              />
+              <span className="finlann-field__label" style={{ marginLeft: 6 }}>
+                Despesa fixa (todo mês)
+              </span>
+            </label>
+          </div>
 
           {showDebitFields && (
             <div className="finlann-conditional">

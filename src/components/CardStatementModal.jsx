@@ -164,7 +164,7 @@ export default function CardStatementModal({
             {/* espaço reservado, mas sem conteúdo extra aqui agora */}
           </div>
 
-          <div className="finlann-statement-table">
+          <div className="finlann-statement-table finlann-statement-table--card">
             <div className="finlann-statement-row finlann-statement-row--header">
               <span>Dia</span>
               <span>Descrição</span>

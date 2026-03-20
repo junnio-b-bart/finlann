@@ -23,11 +23,12 @@
   -webkit-backdrop-filter: none;
 }
 
-/* área de conteúdo (resumo de entradas/saídas) – deixa o scroll por conta da página */
+/* área de conteúdo (resumo de entradas/saídas) */
 .finlann-dashboard__scroll {
   flex: 1;
   min-height: 0;
-  overflow-y: visible;  /* sem scroll próprio nem barra neste box */
+  overflow-y: auto;  /* scroll interno na área de resumo */
+  -webkit-overflow-scrolling: touch; /* scroll suave no iOS */
   padding-right: 4px;
   padding-bottom: 82px; /* gapzinho de ~2px entre o box grande e os botões */
 }
@@ -681,7 +682,7 @@
 .finlann-overlay__panel {
   width: 100%;
   max-width: 480px;
-  max-height: calc(100vh - 64px);
+  max-height: calc(100dvh - 40px); /* nunca passa da tela, com margem em cima/baixo no mobile também */
   border-radius: 24px;
   /* fundo mais sólido, sem deixar o conteúdo de trás "vazar" */
   background: #020617;
@@ -750,7 +751,7 @@
 
 /* corpo rolável para tabelas/listas longas */
 .finlann-modal__body--scroll {
-  max-height: calc(100vh - 180px);
+  max-height: calc(100dvh - 180px); /* corpo do modal rola, mantendo header + footer visíveis mesmo em telas pequenas */
   overflow-y: auto;
 }
 
@@ -833,6 +834,13 @@
   background: rgba(15, 23, 42, 0.95);
   color: var(--color-text);
   font-size: var(--font-size-sm);
+}
+
+/* Variante mais compacta para campos de data em modais (como data da compra) */
+.finlann-field__input--date-pill {
+  max-width: 260px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* campo de valor maior e centralizado */
@@ -1093,13 +1101,19 @@
 
 .finlann-statement-row {
   display: grid;
-  /* agora: Data | Descrição | Origem | Parc. | Valor */
+  /* padrão: Data | Descrição | Origem | Parc. | Valor */
   grid-template-columns: 44px minmax(0, 1fr) 80px 56px 72px;
   align-items: center;
   column-gap: 8px;
   row-gap: 4px;
   padding: 4px 6px;
   font-size: var(--font-size-xs);
+}
+
+/* Tabela de fatura do cartão: layout mais compacto para o Valor não "puxar" tudo para a direita */
+.finlann-statement-table--card .finlann-statement-row {
+  /* Data | Descrição | Parc. | Valor */
+  grid-template-columns: 40px minmax(0, 1.6fr) 60px 80px;
 }
 
 .finlann-statement-row--header {
@@ -1139,8 +1153,8 @@
 
 .finlann-settings-avatar {
   flex: 0 0 auto;
-  width: 52px;
-  height: 52px;
+  width: 60px; /* um pouco maior para equilibrar com o texto e o botão */
+  height: 60px;
   border-radius: 999px;
   overflow: hidden;
 }
@@ -1168,7 +1182,7 @@
 }
 
 .finlann-settings-profile-text {
-  flex: 1;
+  flex: 0 1 70%; /* coluna de texto um pouco mais contida para abrir espaço pro botão de sync */
   min-width: 0;
 }
 
@@ -1225,11 +1239,11 @@
 .finlann-settings-sync-button {
   border-radius: 999px;
   border: none;
-  width: 32px;
-  height: 32px;
+  width: 36px; /* ligeiramente maior para equilibrar com os botões de baixo */
+  height: 36px;
   background: rgba(15, 23, 42, 0.9);
   color: #e5e7eb;
-  font-size: 16px;
+  font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;

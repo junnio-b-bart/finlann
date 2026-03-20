@@ -300,11 +300,15 @@ export function getMonthlySummary(state, monthIndex, year) {
     isSameMonthYear(i.createdAt, monthIndex, year)
   );
 
-  const totalIncomes = filteredIncomes.reduce((acc, i) => acc + i.amount, 0);
+  const totalIncomes = filteredIncomes.reduce(
+    (acc, i) => acc + Number(i.amount || 0),
+    0
+  );
 
   const incomesByType = filteredIncomes.reduce((acc, i) => {
     const key = i.type || "outros";
-    acc[key] = (acc[key] || 0) + i.amount;
+    const value = Number(i.amount || 0);
+    acc[key] = (acc[key] || 0) + value;
     return acc;
   }, {});
 
@@ -318,10 +322,22 @@ export function getMonthlySummary(state, monthIndex, year) {
     }
   }
 
+  // Além das faturas de cartão, também consideramos saídas que não estão vinculadas
+  // a um cartão de crédito (pix, dinheiro, débito ou crédito sem cardId) para o
+  // total de "Saídas" do resumo do app.
+  const extraExpensesTotal = state.expenses
+    .filter((e) => {
+      const createdAt = e.purchaseDate || e.createdAt;
+      if (!isSameMonthYear(createdAt, monthIndex, year)) return false;
+      // tudo que não for crédito em cartão, ou crédito sem cardId
+      return e.method !== "credit" || !e.cardId;
+    })
+    .reduce((acc, e) => acc + Number(e.amount || 0), 0);
+
   const totalExpenses = Object.values(expensesByCard).reduce(
     (acc, v) => acc + v,
     0
-  );
+  ) + extraExpensesTotal;
 
   // Resumo por categoria (para balanço de saídas)
   const expensesByCategory = {};
@@ -330,7 +346,8 @@ export function getMonthlySummary(state, monthIndex, year) {
     const createdAt = e.purchaseDate || e.createdAt;
     if (!isSameMonthYear(createdAt, monthIndex, year)) continue;
     const categoryKey = e.category || "outros";
-    expensesByCategory[categoryKey] = (expensesByCategory[categoryKey] || 0) + e.amount;
+    const value = Number(e.amount || 0);
+    expensesByCategory[categoryKey] = (expensesByCategory[categoryKey] || 0) + value;
   }
 
   const balance = totalIncomes - totalExpenses;
