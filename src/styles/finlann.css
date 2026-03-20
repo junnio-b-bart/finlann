@@ -3,6 +3,7 @@
   flex-direction: column;
   gap: 16px;
   flex: 1; /* ocupa a altura disponível entre topo e barra/botões */
+  padding-bottom: 140px; /* garante espaço para botões flutuantes + bottom nav em todas as abas */
 }
 
 /* topo fixo: logo + mês/ano + cards de resumo, grudados no topo do app quando rolar */
@@ -50,8 +51,8 @@
 
 /* conteúdo rolável dentro do box, com respiro em cima/baixo da barra */
 .finlann-summary-inner {
-  max-height: 484px; /* ajuste fino extra: +2px pra chegar um pouco mais perto dos botões */
-  overflow-y: auto;
+  max-height: none; /* deixa o conteúdo crescer conforme necessário; scroll global cuida do restante */
+  overflow-y: visible;
   padding: 12px 4px 20px 0; /* respiro de vidro puro em cima e embaixo do conteúdo */
   scrollbar-width: thin; /* Firefox: barra fininha dentro do box */
   scrollbar-color: rgba(148, 163, 184, 0.6) transparent;

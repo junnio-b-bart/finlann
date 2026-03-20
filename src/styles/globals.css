@@ -10,6 +10,7 @@ html,
 body,
 #root {
   height: 100%;
+  background-color: #020617; /* garante que a área da ilha dinâmica e status bar use o mesmo fundo do app */
 }
 
 body {
@@ -19,7 +20,8 @@ body {
   font-size: 18px; /* deixa tudo ~12–15% maior, equivalente a ~120–125% de zoom */
   display: flex;
   justify-content: center; /* garante centralização horizontal do #root */
-  overflow: hidden; /* sem scroll na página inteira */
+  overflow-x: hidden;
+  overflow-y: auto; /* permite scroll vertical global pra telas mais baixas */
 }
 
 /* Scrollbar global mais moderna: fininha e arredondada */
@@ -49,13 +51,14 @@ body {
 }
 
 .app-root {
-  height: 100vh; /* app sempre encaixado na altura da viewport */
+  min-height: 100vh; /* app cobre pelo menos a viewport, mas pode crescer se o conteúdo exigir */
   display: flex;
   justify-content: center;
   align-items: flex-start; /* app começa sempre "colado" no topo visual */
   background: transparent; /* deixa o fundo sólido do body aparecer por igual */
   padding: 8px; /* respiro nas laterais */
-  overflow: hidden; /* evita scroll extra na página; só os boxes internos rolam */
+  overflow-x: hidden;
+  overflow-y: auto; /* deixa o app inteiro rolar em telas menores */
 }
 
 .app-shell {
@@ -103,9 +106,10 @@ main {
 
   /* no mobile, usa a altura "real" da viewport pra evitar segundo scroll da página */
   .app-root {
-    height: 100dvh; /* cobre a altura útil real, sem empurrar por causa da barra do navegador */
+    min-height: 100dvh; /* cobre a altura útil real, e permite crescer se precisar */
     padding: 0 4px 4px; /* remove o espaço de cima, mantém respiro nas laterais/baixo */
-    overflow: hidden; /* garante que só os boxes internos rolem */
+    overflow-x: hidden;
+    overflow-y: auto; /* deixa o app rolar verticalmente no mobile quando faltar altura */
   }
 
   .app-shell {
