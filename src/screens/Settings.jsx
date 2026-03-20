@@ -4,8 +4,6 @@ import "../styles/tokens.css";
 import "../styles/finlann.css";
 
 import { exportState, normalizeState } from "../data/finance.sync.js";
-import googleLogo from "../assets/Google_G_logo.png";
-import { isGoogleConfigured, isLoggedInToGoogle, getCurrentGoogleUser, loginWithGoogle, logoutFromGoogle, syncWithGoogleDrive, loadRemoteStateFromDrive } from "../data/googleDriveClient.js";
 import { createAccount, loginAccount, loadStateFromBackend, saveStateToBackend } from "../data/finlannBackendClient.js";
 import SettingsCards from "./SettingsCards.jsx";
 import SettingsNotifications from "./SettingsNotifications.jsx";
@@ -19,15 +17,8 @@ export default function Settings({
   onDeleteCard,
   onSyncState,
   onResetState,
-  onGoogleStatusToast,
 }) {
   const exported = exportState(financeState);
-
-  const googleReady = isGoogleConfigured();
-  const [googleSession, setGoogleSession] = useState(() => ({
-    loggedIn: isLoggedInToGoogle(),
-    user: getCurrentGoogleUser(),
-  }));
 
   const [showEraseModal, setShowEraseModal] = useState(false);
   const [eraseConfirmation, setEraseConfirmation] = useState("");
@@ -82,117 +73,6 @@ export default function Settings({
   const [modalPasswordErrorFlag, setModalPasswordErrorFlag] = useState(false);
   const [modalConfirmPasswordError, setModalConfirmPasswordError] = useState(false);
 
-  const loggedIn = googleSession.loggedIn;
-  const user = googleSession.user;
-
-  async function handleLoginClick() {
-    if (loggedIn) {
-      const confirmed = window.confirm("Deseja sair da conta Google conectada ao Finlann?");
-      if (!confirmed) return;
-      await logoutFromGoogle();
-      setGoogleSession({ loggedIn: false, user: null });
-      onGoogleStatusToast?.("logout-success");
-      return;
-    }
-
-    try {
-      await loginWithGoogle();
-
-      // Depois do login, buscamos o estado remoto e decidimos o que fazer
-      await handlePostLoginStateDecision();
-      onGoogleStatusToast?.("login-success");
-    } catch (err) {
-      console.error("[Finlann] Erro no login com Google:", err);
-      onGoogleStatusToast?.("login-error");
-      alert("Não foi possível conectar ao Google. Tente novamente.");
-    }
-  }
-
-  async function handleSyncClick() {
-    try {
-      const merged = await syncWithGoogleDrive(financeState);
-      console.log("[Finlann] Estado sincronizado (merge remoto+local)", merged);
-
-      if (onSyncState) {
-        onSyncState(merged);
-      }
-
-      alert("Sincronização com Google Drive concluída.");
-    } catch (err) {
-      console.error("[Finlann] Erro ao sincronizar com Google Drive:", err);
-      alert("Não foi possível sincronizar com o Google Drive. Verifique o login e tente de novo.");
-    }
-  }
-
-  // Decide como tratar o estado local x remoto logo após o login
-  async function handlePostLoginStateDecision() {
-    // Atualiza sessão visual
-    setGoogleSession({
-      loggedIn: true,
-      user: getCurrentGoogleUser(),
-    });
-
-    const remote = await loadRemoteStateFromDrive();
-    const local = normalizeState(financeState);
-
-    const localIsEmpty =
-      (local.cards?.length || 0) === 0 &&
-      (local.expenses?.length || 0) === 0 &&
-      (local.incomes?.length || 0) === 0;
-
-    if (!remote) {
-      // Nada no Drive ainda → mantém só o local; primeiro sync vai criar o arquivo
-      alert("Conectado ao Google Drive. Ainda não há dados na conta, o estado atual deste dispositivo será usado no próximo sync.");
-      return;
-    }
-
-    if (localIsEmpty) {
-      // App vazio → simplesmente carregar tudo do Drive
-      if (onSyncState) {
-        onSyncState(remote);
-      }
-      alert("Dados da sua conta Google foram carregados neste dispositivo.");
-      return;
-    }
-
-    // Temos dados locais e remotos → perguntar o que fazer
-    const choice = window.prompt(
-      "Encontramos dados neste dispositivo e também na sua conta Google.\n" +
-        "Digite: \n" +
-        "1 - Limpar este app e usar apenas os dados da conta Google\n" +
-        "2 - Juntar (mesclar) os dados locais com os da conta Google\n" +
-        "3 - Cancelar (não alterar nada agora)",
-      "2"
-    );
-
-    if (choice === "1") {
-      // Limpa app e usa só o remoto
-      if (onSyncState) {
-        onSyncState(remote);
-      }
-      alert("Este dispositivo agora está usando apenas os dados da sua conta Google.");
-      return;
-    }
-
-    if (choice === "2") {
-      // Usa fluxo normal de sync (merge remoto+local + grava no Drive)
-      try {
-        const merged = await syncWithGoogleDrive(financeState);
-        if (onSyncState) {
-          onSyncState(merged);
-        }
-        alert("Dados locais e da conta Google foram mesclados.");
-      } catch (err) {
-        console.error("[Finlann] Erro ao mesclar dados locais e remotos após login:", err);
-        alert("Não foi possível mesclar os dados com o Google Drive agora. Tente o sync manual depois.");
-      }
-      return;
-    }
-
-    // Qualquer outra coisa (3, cancelar, ESC) → não altera o estado
-    alert("Conexão com Google feita, mas mantivemos o estado local sem alterações.");
-  }
-
   function openAccountModal(mode) {
     setAccountModalMode(mode);
     setModalEmail("");
@@ -233,11 +113,13 @@ export default function Settings({
 
   return (
     <div className="finlann-dashboard">
-      <header className="finlann-header finlann-header--centered">
-        <div className="finlann-header__left">
-          <h1 className="finlann-section__title">Configurações</h1>
-        </div>
-      </header>
+      <div className="finlann-header-strip">
+        <header className="finlann-header finlann-header--centered">
+          <div className="finlann-header__left" style={{ paddingTop: 8 }}>
+            <h1 className="finlann-section__title">Configurações</h1>
+          </div>
+        </header>
+      </div>
 
       {/* Card de Conta Finlann (sem Google) */}
       <section className="finlann-section">
@@ -413,7 +295,7 @@ export default function Settings({
             <div className="finlann-modal__body">
               <p className="finlann-settings-profile-subtitle">
                 Este procedimento vai apagar todas as entradas, saídas e cartões salvos neste dispositivo.
-                Os dados que já estiverem na sua conta Google (Drive) não serão apagados.
+                Os dados já salvos na sua conta Finlann permanecerão no servidor.
               </p>
               <p className="finlann-settings-profile-subtitle">
                 Para confirmar, digite a frase abaixo exatamente como está:

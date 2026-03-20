@@ -5,7 +5,7 @@ import Settings from "./screens/Settings.jsx";
 import BottomNav from "./components/BottomNav.jsx";
 import Toast from "./components/Toast.jsx";
 import { createInitialState, createDemoStateForMonth, addExpense, addCard, updateCard, deleteCard, addIncome, removeExpenses, updateExpenses, removeIncomes, updateIncomes } from "./data/finance.js";
-import { saveStateToBackend } from "./data/finlannBackendClient.js";
+import { loadStateFromBackend, saveStateToBackend, subscribeToStateChanges } from "./data/finlannBackendClient.js";
 
 import "./styles/globals.css";
 import "./styles/finlann.css";
@@ -16,17 +16,32 @@ export default function App() {
   const [tab, setTab] = useState("overview");
   const [settingsView, setSettingsView] = useState("root"); // root | cards | notifications
   const [toast, setToast] = useState(null);
-  const [financeState, setFinanceState] = useState(() => {
-    // Para nossos testes de UX de login/sync, sempre iniciamos com um mês
-    // de demonstração, independente do que estava salvo antes.
-    const today = new Date();
-    return createDemoStateForMonth(today.getFullYear(), today.getMonth());
-  });
+  const [financeState, setFinanceState] = useState(null);
+  const [isBooting, setIsBooting] = useState(true);
+  const [pendingRemoteState, setPendingRemoteState] = useState(null);
+
+  // Boot inicial: carrega estado do backend (Supabase) ou cai em um estado de demonstração
+  useEffect(() => {
+    async function boot() {
+      try {
+        const remote = await loadStateFromBackend();
+        if (remote) {
+          setFinanceState(remote);
+          return;
+        }
+        const today = new Date();
+        setFinanceState(createDemoStateForMonth(today.getFullYear(), today.getMonth()));
+      } finally {
+        setIsBooting(false);
+      }
+    }
+    boot();
+  }, []);
 
   // Migração rápida: garante que não existam despesas duplicadas com o mesmo id
   useEffect(() => {
     setFinanceState((prev) => {
-      if (!prev || !Array.isArray(prev.expenses)) return prev;
+      if (!prev || !Array.isArray(prev?.expenses)) return prev;
       const seen = new Set();
       const deduped = prev.expenses.filter((e) => {
         if (!e || !e.id) return true;
@@ -118,24 +133,25 @@ export default function App() {
     };
   }, []);
 
+  // Persistência local + autosave no backend para o household atual
   useEffect(() => {
+    if (!financeState) return;
+
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(financeState));
     } catch {
       // silencioso por enquanto
     }
 
-    // também disparamos um salvamento automático no backend (Supabase)
     let cancelled = false;
     const timeoutId = setTimeout(async () => {
       if (cancelled) return;
       try {
         await saveStateToBackend(financeState);
       } catch (e) {
-        // por enquanto, só loga no console; no futuro podemos mostrar um aviso visual
         console.warn("[Finlann] Falha ao salvar automaticamente no backend", e);
       }
-    }, 800); // pequeno debounce pra evitar chamadas em excesso
+    }, 800);
 
     return () => {
       cancelled = true;
@@ -151,6 +167,18 @@ export default function App() {
     }, 2400);
     return () => clearTimeout(id);
   }, [toast]);
+
+  // Realtime: escuta atualizações do estado desta conta no Supabase
+  useEffect(() => {
+    if (!financeState) return;
+
+    const unsubscribe = subscribeToStateChanges(undefined, (remoteState) => {
+      // guarda o novo estado e deixa o usuário decidir quando aplicar
+      setPendingRemoteState(remoteState);
+    });
+
+    return () => unsubscribe?.();
+  }, [financeState]);
 
   function handleAddExpense(expense) {
     setFinanceState((prev) => addExpense(prev, expense));
@@ -196,11 +224,43 @@ export default function App() {
     );
   }
 
+  if (isBooting || !financeState) {
+    return (
+      <div className="app-root">
+        <div className="app-shell">
+          <main>
+            <p className="finlann-loading">Carregando seus dados...</p>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-root">
       <div className="app-shell">
         <main>
           {toast && <Toast message={toast.message} kind={toast.kind} />}
+
+          {pendingRemoteState && (
+            <div className="finlann-sync-banner">
+              <span>Novos dados desta conta estão disponíveis.</span>
+              <button
+                type="button"
+                className="finlann-sync-banner__button"
+                onClick={() => {
+                  setFinanceState(pendingRemoteState);
+                  setPendingRemoteState(null);
+                  setToast({
+                    message: "Dados atualizados da conta.",
+                    kind: "success",
+                  });
+                }}
+              >
+                Atualizar agora
+              </button>
+            </div>
+          )}
 
           {tab === "overview" && (
             <Dashboard
@@ -245,24 +305,6 @@ export default function App() {
                   }
                 }
                 setFinanceState(createInitialState());
-              }}
-              onGoogleStatusToast={(status) => {
-                if (status === "login-success") {
-                  setToast({
-                    message: "Conectado à sua conta Google.",
-                    kind: "success",
-                  });
-                } else if (status === "logout-success") {
-                  setToast({
-                    message: "Você saiu da conta Google.",
-                    kind: "success",
-                  });
-                } else if (status === "login-error") {
-                  setToast({
-                    message: "Não foi possível conectar ao Google.",
-                    kind: "error",
-                  });
-                }
               }}
             />
           )}

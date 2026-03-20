@@ -6,6 +6,7 @@ import CardStatementModal from "../components/CardStatementModal.jsx";
 import IncomeModal from "../components/IncomeModal.jsx";
 import IncomeStatementModal from "../components/IncomeStatementModal.jsx";
 import MonthPickerModal from "../components/MonthPickerModal.jsx";
+import Overlay from "../components/Overlay.jsx";
 import { getMonthlySummary } from "../data/finance.js";
 import logoFinlann from "../assets/FinlannLogo.png";
 
@@ -494,29 +495,28 @@ export default function Dashboard({
       )}
 
       {showFixedStatement && (
-        <div className="finlann-overlay">
-          <div className="finlann-overlay__panel">
-            <header className="finlann-modal__header">
-              <p className="finlann-modal__eyebrow">Balanço de saídas</p>
-              <h2 className="finlann-modal__title">Resumo por categoria</h2>
-            </header>
-            <div className="finlann-modal__body finlann-modal__body--scroll">
-              <div className="finlann-list">
-                {Object.keys(summary.expensesByCategory || {}).length === 0 && (
-                  <div className="finlann-list-item" style={{ opacity: 0.7 }}>
-                    <div className="finlann-list-item__left">
-                      <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
-                      <div>
-                        <p className="finlann-list-item__title">Nenhuma saída categorizada</p>
-                        <p className="finlann-list-item__subtitle">
-                          Categorias serão calculadas a partir das próximas saídas.
-                        </p>
-                      </div>
+        <Overlay onClose={() => setShowFixedStatement(false)} kind="expense">
+          <header className="finlann-modal__header">
+            <p className="finlann-modal__eyebrow">Balanço de saídas</p>
+            <h2 className="finlann-modal__title">Resumo por categoria</h2>
+          </header>
+          <div className="finlann-modal__body finlann-modal__body--scroll">
+            <div className="finlann-list">
+              {Object.keys(summary.expensesByCategory || {}).length === 0 && (
+                <div className="finlann-list-item" style={{ opacity: 0.7 }}>
+                  <div className="finlann-list-item__left">
+                    <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
+                    <div>
+                      <p className="finlann-list-item__title">Nenhuma saída categorizada</p>
+                      <p className="finlann-list-item__subtitle">
+                        Categorias serão calculadas a partir das próximas saídas.
+                      </p>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {Object.entries(summary.expensesByCategory || {}).map(
+              {Object.entries(summary.expensesByCategory || {}).map(
                   ([categoryId, total]) => {
                     const label =
                       categoryId === "alimentacao"
@@ -565,32 +565,30 @@ export default function Dashboard({
                     );
                   }
                 )}
-              </div>
-            </div>
-            <div className="finlann-settings-actions" style={{ marginTop: 8 }}>
-              <div className="finlann-settings-actions-row">
-                <button
-                  type="button"
-                  className="finlann-chip finlann-chip--solid finlann-chip--accent"
-                  onClick={() => setShowFixedStatement(false)}
-                >
-                  Fechar
-                </button>
-              </div>
             </div>
           </div>
-        </div>
+          <div className="finlann-settings-actions" style={{ marginTop: 8 }}>
+            <div className="finlann-settings-actions-row">
+              <button
+                type="button"
+                className="finlann-chip finlann-chip--solid finlann-chip--accent"
+                onClick={() => setShowFixedStatement(false)}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </Overlay>
       )}
 
       {categoryStatement && (
-        <div className="finlann-overlay">
-          <div className="finlann-overlay__panel finlann-overlay__panel--expense">
-            <header className="finlann-modal__header">
-              <p className="finlann-modal__eyebrow">Saídas por categoria</p>
-              <h2 className="finlann-modal__title">{categoryStatement.label}</h2>
-            </header>
-            <div className="finlann-modal__body finlann-modal__body--scroll">
-              <div className="finlann-statement-table">
+        <Overlay onClose={() => setCategoryStatement(null)} kind="expense">
+          <header className="finlann-modal__header">
+            <p className="finlann-modal__eyebrow">Saídas por categoria</p>
+            <h2 className="finlann-modal__title">{categoryStatement.label}</h2>
+          </header>
+          <div className="finlann-modal__body finlann-modal__body--scroll">
+            <div className="finlann-statement-table">
                 <div className="finlann-statement-row finlann-statement-row--header">
                   <span>Data</span>
                   <span>Descrição</span>
@@ -658,17 +656,16 @@ export default function Dashboard({
                   })}
               </div>
             </div>
-            <footer className="finlann-modal__footer">
-              <button
-                type="button"
-                className="finlann-modal__secondary"
-                onClick={() => setCategoryStatement(null)}
-              >
-                Voltar
-              </button>
-            </footer>
-          </div>
-        </div>
+          <footer className="finlann-modal__footer">
+            <button
+              type="button"
+              className="finlann-modal__secondary"
+              onClick={() => setCategoryStatement(null)}
+            >
+              Voltar
+            </button>
+          </footer>
+        </Overlay>
       )}
     </div>
   );

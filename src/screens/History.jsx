@@ -69,18 +69,20 @@ export default function History({ financeState, onUpdateIncomes, onUpdateExpense
 
   return (
     <div className="finlann-dashboard">
-      <header className="finlann-header finlann-header--centered">
-        <div className="finlann-header__left">
-          <div className="finlann-logo-pill">
-            <img
-              src={logoFinlann}
-              alt="Finlann"
-              className="finlann-logo-img"
-            />
+      <div className="finlann-header-strip">
+        <header className="finlann-header finlann-header--centered">
+          <div className="finlann-header__left">
+            <div className="finlann-logo-pill">
+              <img
+                src={logoFinlann}
+                alt="Finlann"
+                className="finlann-logo-img"
+              />
+            </div>
+            <h1 className="finlann-section__title">Últimos lançamentos</h1>
           </div>
-          <h1 className="finlann-section__title">Últimos lançamentos</h1>
-        </div>
-      </header>
+        </header>
+      </div>
 
       <section className="finlann-section finlann-section--history">
 

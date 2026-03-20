@@ -20,10 +20,10 @@ console.warn(
 );
 }
 
-const supabase =
-SUPABASE_URL && SUPABASE_ANON_KEY
-? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-: null;
+export const supabase =
+  SUPABASE_URL && SUPABASE_ANON_KEY
+    ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
 
 export async function loadStateFromBackend(householdId) {
 if (!supabase) return null;
@@ -70,6 +70,37 @@ export async function saveStateToBackend(financeState, householdId) {
   }
 
   return normalizeState(stateToSave);
+}
+
+export function subscribeToStateChanges(householdId, onChange) {
+  if (!supabase || typeof onChange !== "function") return () => {};
+
+  const effectiveId = householdId || getCurrentHouseholdId();
+
+  const channel = supabase
+    .channel(`finlann_state:${effectiveId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "finlann_state",
+        filter: `id=eq.${effectiveId}`,
+      },
+      (payload) => {
+        const nextState = payload?.new?.state
+          ? normalizeState(payload.new.state)
+          : null;
+        if (nextState) {
+          onChange(nextState);
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }
 
 export async function createAccount(profile) {
