@@ -155,10 +155,7 @@ export default function Settings({
                 className="finlann-settings-sync-button"
                 onClick={async () => {
                   try {
-                    // 1) Sobe o estado atual deste dispositivo para o backend
-                    await saveStateToBackend(financeState, currentAccount.user_id);
-
-                    // 2) Busca o estado mais recente do backend para esta conta
+                    // Puxa o estado mais recente da conta no backend e aplica neste dispositivo
                     const remote = await loadStateFromBackend(currentAccount.user_id);
                     if (remote && onSyncState) {
                       onSyncState(remote);
@@ -167,7 +164,7 @@ export default function Settings({
                     setShowSyncSuccess(true);
                     onSettingsToast?.("Dados sincronizados com a conta.", "success");
                   } catch (e) {
-                    console.error("[Finlann] Erro ao forçar sync com backend:", e);
+                    console.error("[Finlann] Erro ao sincronizar com backend:", e);
                     setModalError("Não foi possível sincronizar agora. Tente novamente.");
                   }
                 }}
