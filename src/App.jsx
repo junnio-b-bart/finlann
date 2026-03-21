@@ -5,7 +5,7 @@ import Settings from "./screens/Settings.jsx";
 import BottomNav from "./components/BottomNav.jsx";
 import Toast from "./components/Toast.jsx";
 import { createInitialState, createDemoStateForMonth, addExpense, addCard, updateCard, deleteCard, addIncome, removeExpenses, updateExpenses, removeIncomes, updateIncomes } from "./data/finance.js";
-import { loadStateFromBackend, saveStateToBackend, subscribeToStateChanges } from "./data/finlannBackendClient.js";
+import { loadStateFromBackend, saveStateToBackend, subscribeToStateChanges, getCurrentHouseholdId } from "./data/finlannBackendClient.js";
 
 import "./styles/globals.css";
 import "./styles/finlann.css";
@@ -18,7 +18,10 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [financeState, setFinanceState] = useState(null);
   const [isBooting, setIsBooting] = useState(true);
-  const [pendingRemoteState, setPendingRemoteState] = useState(null);
+  const [pendingRemoteState, setPendingRemoteState] = useState(null); // mantido por enquanto
+
+  // household atual (conta logada); usado para amarrar realtime no Supabase
+  const householdId = getCurrentHouseholdId();
 
   // Boot inicial: carrega estado do backend (Supabase) ou cai em um estado de demonstração
   useEffect(() => {
@@ -151,7 +154,7 @@ export default function App() {
       } catch (e) {
         console.warn("[Finlann] Falha ao salvar automaticamente no backend", e);
       }
-    }, 800);
+    }, 150); // autosave mais rápido para sincronização quase imediata
 
     return () => {
       cancelled = true;
@@ -171,10 +174,14 @@ export default function App() {
   // Realtime: escuta atualizações do estado desta conta no Supabase
   useEffect(() => {
     if (!financeState) return;
+    const householdId = getCurrentHouseholdId();
+    if (!householdId) return;
 
-    const unsubscribe = subscribeToStateChanges(undefined, (remoteState) => {
-      // guarda o novo estado e deixa o usuário decidir quando aplicar
-      setPendingRemoteState(remoteState);
+    const unsubscribe = subscribeToStateChanges(householdId, (remoteState) => {
+      // aplica automaticamente o estado mais recente da conta em todos os devices conectados
+      setFinanceState(remoteState);
+      setToast({ message: "Dados da conta atualizados.", kind: "success" });
+      setPendingRemoteState(null);
     });
 
     return () => unsubscribe?.();
@@ -241,26 +248,6 @@ export default function App() {
       <div className="app-shell">
         <main>
           {toast && <Toast message={toast.message} kind={toast.kind} />}
-
-          {pendingRemoteState && (
-            <div className="finlann-sync-banner">
-              <span>Novos dados desta conta estão disponíveis.</span>
-              <button
-                type="button"
-                className="finlann-sync-banner__button"
-                onClick={() => {
-                  setFinanceState(pendingRemoteState);
-                  setPendingRemoteState(null);
-                  setToast({
-                    message: "Dados atualizados da conta.",
-                    kind: "success",
-                  });
-                }}
-              >
-                Atualizar agora
-              </button>
-            </div>
-          )}
 
           {tab === "overview" && (
             <Dashboard
