@@ -23,17 +23,27 @@ export default function App() {
   // household atual (conta logada); usado para amarrar realtime no Supabase
   const householdId = getCurrentHouseholdId();
 
-  // Boot inicial: carrega estado do backend (Supabase) ou cai em um estado de demonstração
+  // Boot inicial: carrega estado do backend (Supabase) ou, se estiver vazio,
+  // injeta um mês de demonstração para facilitar testes (entradas/saídas reais).
   useEffect(() => {
     async function boot() {
       try {
         const remote = await loadStateFromBackend();
-        if (remote) {
+        if (remote && (remote.incomes?.length || remote.expenses?.length || remote.cards?.length)) {
           setFinanceState(remote);
           return;
         }
+
         const today = new Date();
-        setFinanceState(createDemoStateForMonth(today.getFullYear(), today.getMonth()));
+        const demo = createDemoStateForMonth(today.getFullYear(), today.getMonth());
+        setFinanceState(demo);
+
+        // se já houver uma conta/household configurado, salva o demo no backend
+        try {
+          await saveStateToBackend(demo);
+        } catch (e) {
+          console.warn("[Finlann] Não foi possível salvar estado de demonstração no backend", e);
+        }
       } finally {
         setIsBooting(false);
       }

@@ -3,6 +3,9 @@ import "../styles/globals.css";
 import "../styles/tokens.css";
 import "../styles/finlann.css";
 
+import eyeOpen from "../assets/eye-open.png";
+import eyeClosed from "../assets/eye-closed.png";
+
 import { exportState, normalizeState } from "../data/finance.sync.js";
 import { createAccount, loginAccount, loadStateFromBackend, saveStateToBackend } from "../data/finlannBackendClient.js";
 import SettingsCards from "./SettingsCards.jsx";
@@ -73,6 +76,8 @@ export default function Settings({
   const [modalUserError, setModalUserError] = useState(false);
   const [modalPasswordErrorFlag, setModalPasswordErrorFlag] = useState(false);
   const [modalConfirmPasswordError, setModalConfirmPasswordError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   function openAccountModal(mode) {
     setAccountModalMode(mode);
@@ -367,7 +372,7 @@ export default function Settings({
               </h2>
             </header>
 
-            <div className="finlann-modal__body">
+            <div className="finlann-modal__body finlann-modal__body--scroll">
               {accountModalMode === "create" && (
                 <>
                   <div style={{ marginBottom: 12 }}>
@@ -485,8 +490,7 @@ export default function Settings({
                   <>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <input
-                        id="finlann-login-password-input"
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         className="finlann-field__input"
                         placeholder="Senha"
                         value={modalPassword}
@@ -505,11 +509,7 @@ export default function Settings({
                       {/* Olhinho para mostrar/ocultar senha */}
                       <button
                         type="button"
-                        onClick={() => {
-                          const input = document.getElementById("finlann-login-password-input");
-                          if (!input) return;
-                          input.type = input.type === "password" ? "text" : "password";
-                        }}
+                        onClick={() => setShowPassword((prev) => !prev)}
                         style={{
                           borderRadius: 999,
                           border: "1px solid rgba(148,163,184,0.5)",
@@ -520,10 +520,14 @@ export default function Settings({
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          fontSize: 14,
+                          padding: 0,
                         }}
                       >
-                        👁
+                        <img
+                          src={showPassword ? eyeClosed : eyeOpen}
+                          alt={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                          style={{ width: 18, height: 18 }}
+                        />
                       </button>
                     </div>
 
@@ -595,13 +599,37 @@ export default function Settings({
                       <span style={{ color: "#ef4444", marginLeft: 4 }}>*</span>
                     )}
                   </label>
-                  <input
-                    type="password"
-                    className="finlann-field__input"
-                    placeholder="Repita a senha"
-                    value={modalConfirmPassword}
-                    onChange={(e) => setModalConfirmPassword(e.target.value)}
-                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      className="finlann-field__input"
+                      placeholder="Repita a senha"
+                      value={modalConfirmPassword}
+                      onChange={(e) => setModalConfirmPassword(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      style={{
+                        borderRadius: 999,
+                        border: "1px solid rgba(148,163,184,0.5)",
+                        width: 32,
+                        height: 32,
+                        background: "transparent",
+                        color: "#e5e7eb",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: 0,
+                      }}
+                    >
+                      <img
+                        src={showConfirmPassword ? eyeClosed : eyeOpen}
+                        alt={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
+                        style={{ width: 18, height: 18 }}
+                      />
+                    </button>
+                  </div>
                 </div>
               )}
 

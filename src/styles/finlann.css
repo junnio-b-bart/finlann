@@ -27,6 +27,7 @@
 .finlann-dashboard__scroll {
   flex: 1;
   min-height: 0;
+  max-height: calc(100dvh - 260px); /* limita a altura para que o conteúdo role dentro da área de resumo */
   overflow-y: auto;  /* scroll interno na área de resumo */
   -webkit-overflow-scrolling: touch; /* scroll suave no iOS */
   padding-right: 4px;
@@ -39,11 +40,11 @@
   border-radius: 20px;
   /* truque de camada: o fundo começa na mesma altura dos cards, mas o conteúdo começa um pouco mais alto */
   margin-top: -214px;   /* abaixa o box 2px em relação à logo/cards */
-  padding: 188px 8px 12px; /* conteúdo na mesma altura relativa aos cards */
-  /* vidro contínuo atrás do conteúdo do box */
-  /* fundo transparente: deixa só os próprios cards/seções aparecerem */
+  padding: 168px 8px 12px; /* conteúdo ainda mais alto, quase colado em Março, atrás dos cards */
+  /* fundo totalmente transparente: deixa só os próprios cards/seções aparecendo, sem "placa" por trás */
   background: transparent;
-  border: 1px solid transparent; /* sem borda desenhada */
+  border: none;
+  box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   margin-bottom: 8px; /* só um respiro antes da barra de menu */
@@ -150,6 +151,7 @@
   row-gap: 8px; /* espaço entre a linha de cima e o saldo */
   column-gap: 0; /* distancia controlada por margin dos cards */
   margin-top: 12px; /* espaço entre o mês/ano e o resumo de Entradas/Saídas/Saldo */
+  padding: 0 12px; /* mesmo respiro lateral das seções abaixo (Resumo de entradas/saídas) */
   z-index: 2; /* fica acima do box grande */
 }
 
@@ -194,13 +196,13 @@
 
   /* margens assimétricas para manter o gap do meio e aumentar laterais */
   .finlann-card--income {
-    margin-left: 12px; /* margem externa esquerda maior */
+    margin-left: 0; /* segue o padding lateral da row */
     margin-right: 2px; /* lado do meio menor */
   }
 
   .finlann-card--expense {
     margin-left: 2px;  /* lado do meio menor */
-    margin-right: 12px; /* margem externa direita maior */
+    margin-right: 0; /* segue o padding lateral da row */
   }
 
   /* Saldo com mesma altura e um pouco mais largo, na linha de baixo */
@@ -273,6 +275,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  padding-top: 8px; /* dá um respiro entre o topo do card e o círculo da pizza, evitando a sensação de corte */
 }
 
 .finlann-fixed-summary__chart {
@@ -282,6 +285,7 @@
   /* Cor base suave; segmentos reais vêm do inline style (chartStyle) */
   background: radial-gradient(circle at center, #1e293b 0, #020617 70%);
   box-shadow: var(--shadow-subtle);
+  margin-top: 32px; /* desce o círculo dentro do card, evitando qualquer sobreposição visual com o topo */
 }
 
 .finlann-fixed-summary__legend {
@@ -1072,12 +1076,15 @@
   margin-bottom: 2px;     /* gap mínimo entre o fim do card e a barra de menu */
 }
 
+/* Box de lançamentos: scroll interno respeitando a barra de menu fixa */
 .finlann-section--history .finlann-section__scroll {
   margin-top: 4px;
-  max-height: 700px;      /* menor, deixa o card mais compacto antes da barra inferior */
+  max-height: calc(100dvh - 270px); /* um pouco mais de distância em relação à bottom nav */
   overflow-y: auto;
-  padding-right: 4px;     /* espaço pro conteúdo não encostar na barra */
-  scrollbar-width: thin;  /* Firefox: barra fininha dentro do card */
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
 }
 
