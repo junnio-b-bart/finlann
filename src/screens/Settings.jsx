@@ -3,8 +3,8 @@ import "../styles/globals.css";
 import "../styles/tokens.css";
 import "../styles/finlann.css";
 
-import eyeOpen from "../assets/eye-open.png";
-import eyeClosed from "../assets/eye-closed.png";
+import eyeOpen from "../assets/icons/4.png";
+import eyeClosed from "../assets/icons/3.png";
 
 import { exportState, normalizeState } from "../data/finance.sync.js";
 import { createAccount, loginAccount, loadStateFromBackend, saveStateToBackend } from "../data/finlannBackendClient.js";
@@ -99,6 +99,74 @@ export default function Settings({
     setModalPassword("");
     setModalConfirmPassword("");
     setModalError("");
+  }
+
+  async function handleLoginSubmit(event) {
+    if (event) {
+      event.preventDefault();
+    }
+
+    if (accountModalMode !== "login") return;
+
+    setModalUserError(false);
+    setModalPasswordErrorFlag(false);
+    setModalError("");
+
+    let hasError = false;
+    if (!modalUser) {
+      setModalUserError(true);
+      hasError = true;
+    }
+    if (hasError) return;
+
+    try {
+      const account = await loginAccount({
+        user_id: modalUser,
+        password: modalPassword || null,
+      });
+      setAndPersistCurrentAccount(account);
+
+      // conflito local x backend para essa conta
+      try {
+        const remoteState = await loadStateFromBackend(account.user_id);
+        const local = normalizeState(financeState);
+
+        const localIsEmpty =
+          (local.cards?.length || 0) === 0 &&
+          (local.expenses?.length || 0) === 0 &&
+          (local.incomes?.length || 0) === 0;
+
+        if (!remoteState && !localIsEmpty) {
+          const choice = window.prompt(
+            "Sua conta Finlann está vazia, mas este dispositivo já tem dados.\n" +
+              "Digite:\n" +
+              "1 - Limpar este app e começar uma conta zerada\n" +
+              "2 - Usar apenas os dados deste dispositivo",
+            "2"
+          );
+
+          if (choice === "1") {
+            onResetState?.();
+          }
+          // escolha "2" mantém o estado local; autosave depois sobe para a conta
+        } else if (remoteState && localIsEmpty) {
+          // app vazio, conta com dados -> usar dados da conta
+          if (onSyncState) {
+            onSyncState(remoteState);
+          }
+        } else if (remoteState && !localIsEmpty) {
+          // temos dados locais E na conta -> abre pop-up de conflito estilizado
+          setAccountConflict({ remoteState });
+        }
+      } catch (e) {
+        console.warn("[Finlann] Não foi possível resolver conflito local/backend após login:", e);
+      }
+
+      closeAccountModal();
+    } catch (err) {
+      console.error("[Finlann] Erro ao fazer login na conta Finlann:", err);
+      setModalError("Usuário ou senha inválidos.");
+    }
   }
 
   if (view === "cards") {
@@ -451,6 +519,11 @@ export default function Settings({
                   placeholder="Nome da conta"
                   value={modalUser}
                   onChange={(e) => setModalUser(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleLoginSubmit(e);
+                    }
+                  }}
                 />
               </div>
 
@@ -504,6 +577,11 @@ export default function Settings({
                           else if (len >= 8) strength = "strong";
                           setModalPasswordStrength(strength);
                           setModalError("");
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleLoginSubmit(e);
+                          }
                         }}
                       />
                       {/* Olhinho para mostrar/ocultar senha */}
@@ -836,67 +914,7 @@ export default function Settings({
                   <button
                     type="button"
                     className="finlann-chip finlann-chip--solid finlann-chip--accent"
-                    onClick={async () => {
-                      setModalUserError(false);
-                      setModalPasswordErrorFlag(false);
-                      setModalError("");
-
-                      let hasError = false;
-                      if (!modalUser) {
-                        setModalUserError(true);
-                        hasError = true;
-                      }
-                      if (hasError) return;
-
-                      try {
-                        const account = await loginAccount({
-                          user_id: modalUser,
-                          password: modalPassword || null,
-                        });
-                        setAndPersistCurrentAccount(account);
-
-                        // conflito local x backend para essa conta
-                        try {
-                          const remoteState = await loadStateFromBackend(account.user_id);
-                          const local = normalizeState(financeState);
-
-                          const localIsEmpty =
-                            (local.cards?.length || 0) === 0 &&
-                            (local.expenses?.length || 0) === 0 &&
-                            (local.incomes?.length || 0) === 0;
-
-                          if (!remoteState && !localIsEmpty) {
-                            const choice = window.prompt(
-                              "Sua conta Finlann está vazia, mas este dispositivo já tem dados.\n" +
-                                "Digite:\n" +
-                                "1 - Limpar este app e começar uma conta zerada\n" +
-                                "2 - Usar apenas os dados deste dispositivo",
-                              "2"
-                            );
-
-                            if (choice === "1") {
-                              onResetState?.();
-                            }
-                            // escolha "2" mantém o estado local; autosave depois sobe para a conta
-                          } else if (remoteState && localIsEmpty) {
-                            // app vazio, conta com dados -> usar dados da conta
-                            if (onSyncState) {
-                              onSyncState(remoteState);
-                            }
-                          } else if (remoteState && !localIsEmpty) {
-                            // temos dados locais E na conta -> abre pop-up de conflito estilizado
-                            setAccountConflict({ remoteState });
-                          }
-                        } catch (e) {
-                          console.warn("[Finlann] Não foi possível resolver conflito local/backend após login:", e);
-                        }
-
-                        closeAccountModal();
-                      } catch (err) {
-                        console.error("[Finlann] Erro ao fazer login na conta Finlann:", err);
-                        setModalError("Usuário ou senha inválidos.");
-                      }
-                    }}
+                    onClick={handleLoginSubmit}
                   >
                     Entrar
                   </button>

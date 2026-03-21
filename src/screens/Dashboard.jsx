@@ -465,6 +465,11 @@ export default function Dashboard({
               </div>
             )}
           </section>
+
+          {/* Quarta caixa de resumo simples (sem retrátil) */}
+          <section className="finlann-section finlann-section--tall">
+            {/* box de conteúdo simples, sem título/aba ou seta */}
+          </section>
           </div>{/* fim da finlann-summary-inner */}
         </div>{/* fim da finlann-summary-box */}
       </div>

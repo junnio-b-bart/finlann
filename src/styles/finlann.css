@@ -27,28 +27,57 @@
 .finlann-dashboard__scroll {
   flex: 1;
   min-height: 0;
-  max-height: calc(100dvh - 260px); /* limita a altura para que o conteúdo role dentro da área de resumo */
+  max-height: calc(100dvh - 380px); /* box termina bem antes dos botões + bottom nav; nada passa por trás deles */
   overflow-y: auto;  /* scroll interno na área de resumo */
   -webkit-overflow-scrolling: touch; /* scroll suave no iOS */
   padding-right: 4px;
-  padding-bottom: 82px; /* gapzinho de ~2px entre o box grande e os botões */
+  padding-bottom: 0;
 }
 
-/* box maior agrupando Gastos fixos + Resumo de entradas + Resumo de saídas */
+/* box maior agrupando Gastos fixos + Resumo de entradas + Resumo de saídas
+   LAYER 2: placa de vidro atrás do conteúdo, mais uma faixa de vidro onde ficavam os chips */
 .finlann-summary-box {
   position: relative;
   border-radius: 20px;
   /* truque de camada: o fundo começa na mesma altura dos cards, mas o conteúdo começa um pouco mais alto */
-  margin-top: -214px;   /* abaixa o box 2px em relação à logo/cards */
-  padding: 168px 8px 12px; /* conteúdo ainda mais alto, quase colado em Março, atrás dos cards */
-  /* fundo totalmente transparente: deixa só os próprios cards/seções aparecendo, sem "placa" por trás */
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  margin-top: -260px;   /* puxa o box mais para cima, fazendo o conteúdo ficar "por trás" da área dos chips */
+  padding: 230px 8px 12px; /* desce um pouco mais o conteúdo, mantendo uma faixa de vidro generosa acima */
+  /* placa de vidro leve, sem cor forte própria */
+  background: rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   margin-bottom: 8px; /* só um respiro antes da barra de menu */
-  z-index: 1; /* abaixo dos cards de Entradas/Saídas/Saldo */
+  z-index: 1; /* abaixo dos chips de Entradas/Saídas/Saldo */
+}
+
+/* Faixa de vidro no topo da summary-box (onde ficavam os chips)
+   Conteúdo do box passa por trás, ficando embassado nessa região */
+.finlann-summary-box::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 8px;
+  right: 8px;
+  height: 70px; /* faixa aproximadamente na região onde ficavam os chips */
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 2; /* acima do conteúdo, abaixo do header da página */
+  pointer-events: none; /* não bloqueia cliques no conteúdo scrollando atrás */
+}
+
+.finlann-summary-inner {
+  position: relative;
+  z-index: 1; /* conteúdo passa "por trás" da faixa de vidro (::before) */
+  max-height: none; /* deixa o conteúdo crescer conforme necessário; scroll global cuida do restante */
+  overflow-y: visible;
+  padding: 12px 4px 20px 0; /* respiro de vidro puro em cima e embaixo do conteúdo */
+  scrollbar-width: thin; /* Firefox: barra fininha dentro do box */
+  scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
 }
 
 /* conteúdo rolável dentro do box, com respiro em cima/baixo da barra */
@@ -187,11 +216,33 @@
     row-gap: 8px;                     /* distância até o saldo embaixo */
   }
 
-  /* Entradas/Saídas com mesma largura no mobile (um pouco mais estreitos) */
+  /* Entradas/Saídas com largura mínima para caber "R$ 999.999,99" com respiro
+     e largura máxima controlada para não estourar em telas largas */
   .finlann-card--income,
   .finlann-card--expense {
-    width: 200px;
-    max-width: 200px;
+    min-width: 170px;  /* teste inicial: deve comportar "R$ 999.999,99" justinho */
+    max-width: 240px;  /* não deixar o chip crescer demais em telas largas */
+    width: auto;
+  }
+
+  /* Em telas MUITO estreitas, abaixo da largura mínima desejada, empilha os chips:
+     Entradas
+     Saídas
+     Saldo
+  */
+  @media (max-width: 360px) {
+    .finlann-cards-row {
+      grid-template-columns: 1fr;   /* uma coluna só */
+      justify-content: center;
+    }
+
+    .finlann-card--income,
+    .finlann-card--expense,
+    .finlann-card--balance {
+      width: 100%;
+      max-width: 260px;            /* limite visual pra não ficar gigante */
+      justify-self: center;
+    }
   }
 
   /* margens assimétricas para manter o gap do meio e aumentar laterais */
@@ -219,7 +270,7 @@
   }
 
   .finlann-section {
-    padding: 10px;
+    padding: 10px 12px; /* alinha as bordas dos boxes de conteúdo com os chips de Entradas/Saídas (padding lateral 12px) */
   }
 
   .finlann-section__header {
@@ -285,7 +336,7 @@
   /* Cor base suave; segmentos reais vêm do inline style (chartStyle) */
   background: radial-gradient(circle at center, #1e293b 0, #020617 70%);
   box-shadow: var(--shadow-subtle);
-  margin-top: 32px; /* desce o círculo dentro do card, evitando qualquer sobreposição visual com o topo */
+  margin-top: 24px; /* desce um pouco a pizza para não encostar no topo do card com o novo padding */
 }
 
 .finlann-fixed-summary__legend {
@@ -422,6 +473,11 @@
   -webkit-backdrop-filter: blur(18px);
 }
 
+/* variante mais alta para box de conteúdo simples */
+.finlann-section--tall {
+  min-height: 140px;
+}
+
 .finlann-section__header {
   display: flex;
   align-items: center;
@@ -443,6 +499,14 @@
   align-items: center;
   gap: 10px; /* mais espaço entre seta e título */
   font-size: var(--font-size-lg);
+}
+
+.finlann-section__title--invisible {
+  color: transparent;
+}
+
+.finlann-section__title--invisible .finlann-section__chevron {
+  color: var(--color-text-muted);
 }
 
 .finlann-section__chevron {
@@ -644,8 +708,8 @@
 }
 
 .finlann-bottom-nav__icon {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   display: block;
   filter: grayscale(1) brightness(0.9) opacity(0.8);
 }

@@ -1,7 +1,7 @@
 import "../styles/globals.css";
 import "../styles/tokens.css";
 import resumoIcon from "../assets/resumo.png";
-import lancamentosIcon from "../assets/lancamentos.png";
+import lancamentosIcon from "../assets/icons/5.png";
 import configuracoesIcon from "../assets/configuracoes.png";
 
 const items = [

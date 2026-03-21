@@ -56,14 +56,6 @@ export default function IncomeModal({ onClose, onSave }) {
       e.preventDefault();
       setAmount((prev) => formatAmount(prev));
       e.currentTarget.blur();
-      return;
-    }
-
-    if (e.key === "Backspace") {
-      if (amount) {
-        e.preventDefault();
-        setAmount("");
-      }
     }
   }
 
