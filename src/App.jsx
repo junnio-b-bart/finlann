@@ -9,6 +9,8 @@ import { loadStateFromBackend, saveStateToBackend, subscribeToStateChanges, getC
 
 import "./styles/globals.css";
 import "./styles/finlann.css";
+import loadingStep1 from "./assets/waitingscreen/progresso empty.png";
+import loadingStep2 from "./assets/waitingscreen/progresso empty (2).png";
 
 const STORAGE_KEY = "finlann-state-v1";
 
@@ -19,9 +21,25 @@ export default function App() {
   const [financeState, setFinanceState] = useState(null);
   const [isBooting, setIsBooting] = useState(true);
   const [pendingRemoteState, setPendingRemoteState] = useState(null); // mantido por enquanto
+  const [frame, setFrame] = useState(0); // animação da tela de carregamento
+  const [showIntro, setShowIntro] = useState(true); // vinheta de abertura
 
   // household atual (conta logada); usado para amarrar realtime no Supabase
   const householdId = getCurrentHouseholdId();
+
+  // Vinheta inicial: mostra sempre que a página é carregada ou recarregada
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      setShowIntro(false);
+      return;
+    }
+
+    const id = setTimeout(() => {
+      setShowIntro(false);
+    }, 3000); // ~3s de vinheta
+
+    return () => clearTimeout(id);
+  }, []);
 
   // Boot inicial: carrega estado do backend (Supabase) ou, se estiver vazio,
   // injeta um mês de demonstração para facilitar testes (entradas/saídas reais).
@@ -197,6 +215,17 @@ export default function App() {
     return () => unsubscribe?.();
   }, [financeState]);
 
+  // animação da tela de carregamento / vinheta: alterna entre duas imagens
+  useEffect(() => {
+    if (!showIntro && !isBooting && financeState) return; // só anima enquanto está na intro ou carregando
+
+    const id = setInterval(() => {
+      setFrame((prev) => (prev === 0 ? 1 : 0));
+    }, 600);
+
+    return () => clearInterval(id);
+  }, [showIntro, isBooting, financeState]);
+
   function handleAddExpense(expense) {
     setFinanceState((prev) => addExpense(prev, expense));
     setToast({ message: "Saída registrada com sucesso.", kind: "success" });
@@ -241,11 +270,38 @@ export default function App() {
     );
   }
 
-  if (isBooting || !financeState) {
+  // Vinheta de abertura: mostra só quando o app é aberto de novo na sessão
+  if (showIntro) {
+    const currentImage = frame === 0 ? loadingStep1 : loadingStep2;
+
     return (
       <div className="app-root">
         <div className="app-shell">
-          <main>
+          <main className="finlann-loading-screen">
+            <img
+              src={currentImage}
+              alt="Abrindo Finlann"
+              className="finlann-loading-screen__image"
+            />
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  // Tela de carregamento enquanto os dados ainda não chegaram
+  if (isBooting || !financeState) {
+    const currentImage = frame === 0 ? loadingStep1 : loadingStep2;
+
+    return (
+      <div className="app-root">
+        <div className="app-shell">
+          <main className="finlann-loading-screen">
+            <img
+              src={currentImage}
+              alt="Carregando Finlann"
+              className="finlann-loading-screen__image"
+            />
             <p className="finlann-loading">Carregando seus dados...</p>
           </main>
         </div>
