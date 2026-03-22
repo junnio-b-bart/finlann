@@ -51,7 +51,11 @@ export default function Dashboard({
   const [showFixedStatement, setShowFixedStatement] = useState(false);
   const [categoryStatement, setCategoryStatement] = useState(null); // { id, label }
 
-  // Controle de retrátil para resumos
+  // Popups de resumo a partir dos chips superiores
+  const [showIncomeSummaryModal, setShowIncomeSummaryModal] = useState(false);
+  const [showExpenseSummaryModal, setShowExpenseSummaryModal] = useState(false);
+
+  // Controle de retrátil para resumos (versão em lista dentro da página)
   const [showIncomeSummary, setShowIncomeSummary] = useState(true);
   const [showExpenseSummary, setShowExpenseSummary] = useState(true);
   const [showFixedSummarySection, setShowFixedSummarySection] = useState(true);
@@ -156,12 +160,20 @@ export default function Dashboard({
         </div>
 
         <section className="finlann-cards-row">
-          <article className="finlann-card finlann-card--income">
+          <article
+            className="finlann-card finlann-card--income"
+            onClick={() => setShowIncomeSummaryModal(true)}
+            style={{ cursor: "pointer" }}
+          >
             <p className="finlann-card__label">Entradas</p>
             <p className="finlann-card__value">{format(summary.totalIncomes)}</p>
           </article>
 
-          <article className="finlann-card finlann-card--expense">
+          <article
+            className="finlann-card finlann-card--expense"
+            onClick={() => setShowExpenseSummaryModal(true)}
+            style={{ cursor: "pointer" }}
+          >
             <p className="finlann-card__label">Saídas</p>
             <p className="finlann-card__value">{format(summary.totalExpenses)}</p>
           </article>
@@ -557,6 +569,207 @@ export default function Dashboard({
             setCurrentYear(year);
           }}
         />
+      )}
+
+      {showIncomeSummaryModal && (
+        <Overlay onClose={() => setShowIncomeSummaryModal(false)} kind="income">
+          <header className="finlann-modal__header">
+            <p className="finlann-modal__eyebrow">Resumo</p>
+            <h2 className="finlann-modal__title">Entradas do mês</h2>
+          </header>
+          <div className="finlann-modal__body finlann-modal__body--scroll">
+            <div className="finlann-list">
+              {Object.keys(summary.incomesByType || {}).length === 0 && (
+                <div className="finlann-list-item" style={{ opacity: 0.7 }}>
+                  <div className="finlann-list-item__left">
+                    <span className="finlann-list-item__avatar finlann-list-item__avatar--income" />
+                    <div>
+                      <p className="finlann-list-item__title">Nenhuma entrada ainda</p>
+                      <p className="finlann-list-item__subtitle">
+                        Registre entradas para ver o resumo aqui.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {Object.entries(summary.incomesByType || {}).map(([typeId, total]) => {
+                const label =
+                  typeId === "pix"
+                    ? "Pix"
+                    : typeId === "transfer"
+                    ? "Transferência"
+                    : typeId === "cash"
+                    ? "Dinheiro"
+                    : typeId
+                        .split("-")
+                        .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+                        .join(" ");
+
+                const monthlyIncomesForType = financeState.incomes
+                  .filter((i) => i.type === typeId)
+                  .filter((i) =>
+                    isSameMonthYear(i.createdAt, currentMonthIndex, currentYear)
+                  );
+
+                const lastIncome = monthlyIncomesForType.slice(-1)[0];
+                const subtitle = lastIncome?.origin || "Entradas registradas";
+
+                return (
+                  <button
+                    key={typeId}
+                    className="finlann-list-item"
+                    type="button"
+                    onClick={() =>
+                      setStatementIncomeType({ id: typeId, label })
+                    }
+                  >
+                    <div className="finlann-list-item__left">
+                      <span className="finlann-list-item__avatar finlann-list-item__avatar--income" />
+                      <div>
+                        <p className="finlann-list-item__title">{label}</p>
+                        <p className="finlann-list-item__subtitle">{subtitle}</p>
+                      </div>
+                    </div>
+                    <div className="finlann-list-item__right">
+                      <span className="finlann-list-item__value finlann-list-item__value--positive">
+                        {format(total)}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <footer className="finlann-modal__footer">
+            <button
+              type="button"
+              className="finlann-modal__secondary"
+              onClick={() => setShowIncomeSummaryModal(false)}
+            >
+              Fechar
+            </button>
+          </footer>
+        </Overlay>
+      )}
+
+      {showExpenseSummaryModal && (
+        <Overlay onClose={() => setShowExpenseSummaryModal(false)} kind="expense">
+          <header className="finlann-modal__header">
+            <p className="finlann-modal__eyebrow">Resumo</p>
+            <h2 className="finlann-modal__title">Saídas do mês</h2>
+          </header>
+          <div className="finlann-modal__body finlann-modal__body--scroll">
+            <div className="finlann-list">
+              {financeState.cards.length === 0 &&
+                Object.keys(summary.expensesByCategory || {}).length === 0 && (
+                  <div className="finlann-list-item" style={{ opacity: 0.7 }}>
+                    <div className="finlann-list-item__left">
+                      <span className="finlann-list-item__avatar finlann-list-item__avatar--credit" />
+                      <div>
+                        <p className="finlann-list-item__title">Nenhum cartão ainda</p>
+                        <p className="finlann-list-item__subtitle">
+                          Crie seu primeiro cartão na hora de registrar uma saída.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              {financeState.cards.length === 0 &&
+                Object.keys(summary.expensesByCategory || {}).length > 0 &&
+                Object.entries(summary.expensesByCategory || {}).map(
+                  ([categoryId, total]) => {
+                    const label =
+                      categoryId === "alimentacao"
+                        ? "Alimentação"
+                        : categoryId === "carro"
+                        ? "Carro"
+                        : categoryId === "lazer"
+                        ? "Lazer"
+                        : categoryId === "compras"
+                        ? "Compras"
+                        : categoryId === "investimentos"
+                        ? "Investimentos"
+                        : categoryId === "casa"
+                        ? "Casa"
+                        : categoryId === "saude"
+                        ? "Saúde"
+                        : categoryId === "outros"
+                        ? "Outros"
+                        : categoryId
+                            .split("_")
+                            .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+                            .join(" ");
+
+                    return (
+                      <button
+                        key={categoryId}
+                        type="button"
+                        className="finlann-list-item"
+                        onClick={() =>
+                          setCategoryStatement({ id: categoryId, label })
+                        }
+                      >
+                        <div className="finlann-list-item__left">
+                          <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
+                          <div>
+                            <p className="finlann-list-item__title">{label}</p>
+                            <p className="finlann-list-item__subtitle">
+                              Saídas do mês nesta categoria
+                            </p>
+                          </div>
+                        </div>
+                        <div className="finlann-list-item__right">
+                          <span className="finlann-list-item__value finlann-list-item__value--negative">
+                            {format(total)}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  }
+                )}
+
+              {financeState.cards.map((card) => {
+                const cardTotal = summary.expensesByCard[card.id] || 0;
+                if (cardTotal === 0) return null;
+                return (
+                  <button
+                    key={card.id}
+                    className="finlann-list-item"
+                    type="button"
+                    onClick={() => setStatementCard(card)}
+                  >
+                    <div className="finlann-list-item__left">
+                      <span
+                        className="finlann-list-item__avatar finlann-list-item__avatar--credit"
+                        style={{ background: card.color || undefined }}
+                      />
+                      <div>
+                        <p className="finlann-list-item__title">{card.label}</p>
+                        <p className="finlann-list-item__subtitle">Fatura do mês</p>
+                      </div>
+                    </div>
+                    <div className="finlann-list-item__right">
+                      <span className="finlann-list-item__value finlann-list-item__value--negative">
+                        {format(cardTotal)}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <footer className="finlann-modal__footer">
+            <button
+              type="button"
+              className="finlann-modal__secondary"
+              onClick={() => setShowExpenseSummaryModal(false)}
+            >
+              Fechar
+            </button>
+          </footer>
+        </Overlay>
       )}
 
       {showFixedStatement && (
