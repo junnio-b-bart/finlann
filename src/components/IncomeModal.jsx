@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Overlay from "./Overlay.jsx";
+import { formatCurrencyInput, parseCurrencyInput } from "../utils/currency.js";
 
 const baseIncomeTypes = [
   { id: "pix", label: "Pix" },
@@ -19,52 +20,14 @@ export default function IncomeModal({ onClose, onSave }) {
 
   const incomeTypes = [...baseIncomeTypes, ...customTypes];
 
-  function formatAmount(raw) {
-    if (!raw) return "";
-
-    const normalized = raw
-      .replace(/[^0-9,\.]/g, "")
-      .replace(/\./g, "")
-      .replace(/,/g, ".");
-
-    const value = Number(normalized);
-    if (Number.isNaN(value)) return raw;
-
-    return value.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-  }
-
-  function parseAmount(raw) {
-    if (!raw) return 0;
-    const normalized = raw
-      .replace(/[^0-9,\.]/g, "")
-      .replace(/\./g, "")
-      .replace(/,/g, ".");
-    const value = Number(normalized);
-    return Number.isNaN(value) ? 0 : value;
-  }
-
-  function handleAmountBlur() {
-    if (!amount) return;
-    setAmount((prev) => formatAmount(prev));
-  }
-
-  function handleAmountKeyDown(e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      setAmount((prev) => formatAmount(prev));
-      e.currentTarget.blur();
-    }
-  }
-
   function handleAmountChange(e) {
-    setAmount(e.target.value);
+    const raw = e.target.value;
+    const formatted = formatCurrencyInput(raw);
+    setAmount(formatted);
   }
 
   function handleSave() {
-    const numericAmount = parseAmount(amount);
+    const numericAmount = parseCurrencyInput(amount);
     if (!numericAmount) return;
 
     const nowIso = new Date().toISOString();
@@ -136,8 +99,6 @@ export default function IncomeModal({ onClose, onSave }) {
                 if (!hasTyped && e.target.value !== "") setHasTyped(true);
                 handleAmountChange(e);
               }}
-              onBlur={handleAmountBlur}
-              onKeyDown={handleAmountKeyDown}
             />
           </div>
 

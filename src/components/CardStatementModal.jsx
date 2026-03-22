@@ -166,7 +166,7 @@ export default function CardStatementModal({
 
           <div className="finlann-statement-table finlann-statement-table--card">
             <div className="finlann-statement-row finlann-statement-row--header">
-              <span>Dia</span>
+              <span>Data</span>
               <span>Descrição</span>
               <span style={{ textAlign: "center" }}>Parc.</span>
               <span>Valor</span>
@@ -253,7 +253,7 @@ export default function CardStatementModal({
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {selectionMode && (
               <div style={{ display: "flex", gap: 6 }}>
-                {/* Editar */}
+                {/* Editar (esquerda) */}
                 <button
                   type="button"
                   className={"finlann-modal__secondary"}
@@ -273,7 +273,7 @@ export default function CardStatementModal({
                   Editar
                 </button>
 
-                {/* Transferir */}
+                {/* Transferir (meio) */}
                 <button
                   type="button"
                   className={"finlann-modal__secondary"}
@@ -297,7 +297,7 @@ export default function CardStatementModal({
                   Transferir
                 </button>
 
-                {/* Excluir */}
+                {/* Excluir (direita) */}
                 <button
                   type="button"
                   className={"finlann-modal__secondary"}

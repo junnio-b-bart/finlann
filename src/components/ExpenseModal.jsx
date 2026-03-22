@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Overlay from "./Overlay.jsx";
 import CardModal from "./CardModal.jsx";
+import { formatCurrencyInput, parseCurrencyInput } from "../utils/currency.js";
 
 const paymentTypes = [
   { id: "credit", label: "Crédito" },
@@ -86,54 +87,6 @@ export default function ExpenseModal({
 
   const hasCards = existingCards && existingCards.length > 0;
 
-  function formatAmount(raw) {
-    if (!raw) return "";
-
-    const normalized = raw
-      .replace(/[^0-9,\.]/g, "") // mantém só números, vírgula e ponto
-      .replace(/\./g, "") // tira pontos de milhar
-      .replace(/,/g, "."); // vírgula vira ponto decimal
-
-    const value = Number(normalized);
-    if (Number.isNaN(value)) return raw;
-
-    return value.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-  }
-
-  function parseAmount(raw) {
-    if (!raw) return 0;
-    const normalized = raw
-      .replace(/[^0-9,\.]/g, "")
-      .replace(/\./g, "")
-      .replace(/,/g, ".");
-    const value = Number(normalized);
-    return Number.isNaN(value) ? 0 : value;
-  }
-
-  function handleAmountBlur() {
-    if (!amount) return;
-    setAmount((prev) => formatAmount(prev));
-  }
-
-  function handleAmountKeyDown(e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      setAmount((prev) => formatAmount(prev));
-      e.currentTarget.blur();
-      return;
-    }
-
-    if (e.key === "Backspace") {
-      if (amount) {
-        e.preventDefault();
-        setAmount("");
-      }
-    }
-  }
-
   function handleAmountChange(e) {
     const raw = e.target.value;
 
@@ -141,26 +94,7 @@ export default function ExpenseModal({
       setHasTypedAmount(true);
     }
 
-    // Máscara em tempo real no formato de dinheiro BRL
-    // Mantém só dígitos, assume centavos nos dois últimos
-    const digitsOnly = raw.replace(/\D/g, "");
-
-    if (!digitsOnly) {
-      setAmount("");
-      return;
-    }
-
-    const numeric = Number(digitsOnly) / 100;
-    if (Number.isNaN(numeric)) {
-      setAmount(raw);
-      return;
-    }
-
-    const formatted = numeric.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-
+    const formatted = formatCurrencyInput(raw);
     setAmount(formatted);
   }
 
@@ -205,14 +139,14 @@ export default function ExpenseModal({
 
   const canSave =
     description.trim().length > 0 &&
-    parseAmount(amount) > 0 &&
+    parseCurrencyInput(amount) > 0 &&
     !!paymentType;
 
   const hasAnyTyping = hasTypedDescription || hasTypedAmount;
 
   function handleSaveExpense() {
     if (!canSave) return;
-    const numericAmount = parseAmount(amount);
+    const numericAmount = parseCurrencyInput(amount);
 
     const baseDate = purchaseDate ? new Date(purchaseDate) : new Date();
 
@@ -343,8 +277,6 @@ export default function ExpenseModal({
               inputMode="decimal"
               value={amount}
               onChange={handleAmountChange}
-              onBlur={handleAmountBlur}
-              onKeyDown={handleAmountKeyDown}
             />
           </div>
 

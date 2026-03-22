@@ -42,7 +42,7 @@ export default function HistoryEditEntryModal({ entry, onClose, onSave, existing
   const hasAnyTyping = hasTypedDescription || hasTypedAmount;
 
   function handleSave() {
-    const numericAmount = parseAmount(amountText);
+    const numericAmount = parseCurrencyInput(amountText);
     if (!numericAmount) return;
 
     if (!isIncome && !method) return;

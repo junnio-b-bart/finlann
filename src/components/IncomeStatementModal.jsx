@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Overlay from "./Overlay.jsx";
+import { formatCurrencyInput, parseCurrencyInput } from "../utils/currency.js";
 
 function formatCurrency(value) {
   return value.toLocaleString("pt-BR", {
@@ -64,11 +65,7 @@ export default function IncomeStatementModal({ typeLabel, typeId, incomes, onClo
 
   function handleSaveEdit() {
     if (!editingIncome) return;
-    const raw = editAmount
-      .replace(/[^0-9,\.]/g, "")
-      .replace(/\./g, "")
-      .replace(/,/g, ".");
-    const numericAmount = Number(raw);
+    const numericAmount = parseCurrencyInput(editAmount);
     if (Number.isNaN(numericAmount) || numericAmount <= 0) {
       return;
     }
@@ -214,6 +211,14 @@ export default function IncomeStatementModal({ typeLabel, typeId, incomes, onClo
             <button
               type="button"
               className="finlann-modal__secondary"
+              disabled={selectedIds.length !== 1}
+              onClick={openEditForSelected}
+            >
+              Editar
+            </button>
+            <button
+              type="button"
+              className="finlann-modal__secondary"
               disabled={selectedIds.length === 0}
               onClick={() => {
                 if (!selectedIds.length) return;
@@ -222,14 +227,6 @@ export default function IncomeStatementModal({ typeLabel, typeId, incomes, onClo
               }}
             >
               Excluir
-            </button>
-            <button
-              type="button"
-              className="finlann-modal__secondary"
-              disabled={selectedIds.length !== 1}
-              onClick={openEditForSelected}
-            >
-              Editar
             </button>
           </div>
         )}
@@ -271,7 +268,7 @@ export default function IncomeStatementModal({ typeLabel, typeId, incomes, onClo
               value={editAmount}
               onChange={(e) => {
                 if (!hasEditTyped && e.target.value !== "") setHasEditTyped(true);
-                setEditAmount(e.target.value);
+                setEditAmount(formatCurrencyInput(e.target.value));
               }}
             />
           </div>

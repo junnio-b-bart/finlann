@@ -51,6 +51,12 @@ export default function Dashboard({
   const [showFixedStatement, setShowFixedStatement] = useState(false);
   const [categoryStatement, setCategoryStatement] = useState(null); // { id, label }
 
+  // Seleção/edição dentro do popup "Saídas por categoria"
+  const [categorySelectionMode, setCategorySelectionMode] = useState(false);
+  const [categorySelectedIds, setCategorySelectedIds] = useState([]);
+  const [categoryEditingExpense, setCategoryEditingExpense] = useState(null);
+  const [openColorCategory, setOpenColorCategory] = useState(null);
+
   // Popups de resumo a partir dos chips superiores
   const [showIncomeSummaryModal, setShowIncomeSummaryModal] = useState(false);
   const [showExpenseSummaryModal, setShowExpenseSummaryModal] = useState(false);
@@ -65,6 +71,29 @@ export default function Dashboard({
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
 
   const summary = getMonthlySummary(financeState, currentMonthIndex, currentYear);
+
+  // Paleta de cores configurável por categoria (usada no gráfico de pizza e nos círculos do resumo)
+  const CATEGORY_COLOR_OPTIONS = [
+    "#22c55e",
+    "#3b82f6",
+    "#f97316",
+    "#a855f7",
+    "#eab308",
+    "#38bdf8",
+    "#ef4444",
+    "#6b7280",
+  ];
+
+  const [categoryColors, setCategoryColors] = useState({
+    alimentacao: "#22c55e",
+    carro: "#3b82f6",
+    lazer: "#f97316",
+    compras: "#a855f7",
+    investimentos: "#eab308",
+    casa: "#38bdf8",
+    saude: "#ef4444",
+    outros: "#6b7280",
+  });
 
   // DEBUG TEMPORÁRIO: ajuda a entender por que o resumo de saídas está zerado
   const debugFirstExpense = financeState.expenses[0] || null;
@@ -84,17 +113,6 @@ export default function Dashboard({
     (acc, [, total]) => acc + total,
     0
   );
-
-  const categoryColors = {
-    alimentacao: "#22c55e",
-    carro: "#3b82f6",
-    lazer: "#f97316",
-    compras: "#a855f7",
-    investimentos: "#eab308",
-    casa: "#38bdf8",
-    saude: "#ef4444",
-    outros: "#6b7280",
-  };
 
   let chartStyle = undefined;
   if (categoryEntries.length > 0 && totalCategoriesAmount > 0) {
@@ -204,91 +222,102 @@ export default function Dashboard({
             </div>
           </section>
 
-          <section className="finlann-section">
-            <header
-              className="finlann-section__header finlann-section__header--clickable"
-              onClick={() => setShowIncomeSummary((prev) => !prev)}
-            >
-              <h2 className="finlann-section__title">
-                <span
-                  className={
-                    "finlann-section__chevron" +
-                    (showIncomeSummary ? " is-open" : "")
-                  }
-                >
-                  &gt;
-                </span>
-                Resumo de entradas
-              </h2>
-              <span className="finlann-section__tag">
-                {showIncomeSummary ? "Recolher" : "Mês atual"}
-              </span>
-            </header>
-
-            {showIncomeSummary && (
-            <div className="finlann-list">
-              {Object.keys(summary.incomesByType || {}).length === 0 && (
-                <div className="finlann-list-item" style={{ opacity: 0.7 }}>
-                  <div className="finlann-list-item__left">
-                    <span className="finlann-list-item__avatar finlann-list-item__avatar--income" />
-                    <div>
-                      <p className="finlann-list-item__title">Nenhuma entrada ainda</p>
-                      <p className="finlann-list-item__subtitle">
-                        Registre entradas para ver o resumo aqui
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {Object.entries(summary.incomesByType || {}).map(([typeId, total]) => {
-                const label =
-                  typeId === "pix"
-                    ? "Pix"
-                    : typeId === "transfer"
-                    ? "Transferência"
-                    : typeId === "cash"
-                    ? "Dinheiro"
-                    : typeId
-                        .split("-")
-                        .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
-                        .join(" ");
-
-                const monthlyIncomesForType = financeState.incomes
-                  .filter((i) => i.type === typeId)
-                  .filter((i) =>
-                    isSameMonthYear(i.createdAt, currentMonthIndex, currentYear)
-                  );
-
-                const lastIncome = monthlyIncomesForType.slice(-1)[0];
-                const subtitle = lastIncome?.origin || "Entradas registradas";
-
-                return (
-                  <button
-                    key={typeId}
-                    className="finlann-list-item"
-                    type="button"
-                    onClick={() => setStatementIncomeType({ id: typeId, label })}
+          {/* Resumo de entradas oculto (mantido no código para possível uso futuro) */}
+          {false && (
+            <section className="finlann-section">
+              <header
+                className="finlann-section__header finlann-section__header--clickable"
+                onClick={() => setShowIncomeSummary((prev) => !prev)}
+              >
+                <h2 className="finlann-section__title">
+                  <span
+                    className={
+                      "finlann-section__chevron" +
+                      (showIncomeSummary ? " is-open" : "")
+                    }
                   >
-                    <div className="finlann-list-item__left">
-                      <span className="finlann-list-item__avatar finlann-list-item__avatar--income" />
-                      <div>
-                        <p className="finlann-list-item__title">{label}</p>
-                        <p className="finlann-list-item__subtitle">{subtitle}</p>
+                    &gt;
+                  </span>
+                  Resumo de entradas
+                </h2>
+                <span className="finlann-section__tag">
+                  {showIncomeSummary ? "Recolher" : "Mês atual"}
+                </span>
+              </header>
+
+              {showIncomeSummary && (
+                <div className="finlann-list">
+                  {Object.keys(summary.incomesByType || {}).length === 0 && (
+                    <div className="finlann-list-item" style={{ opacity: 0.7 }}>
+                      <div className="finlann-list-item__left">
+                        <span className="finlann-list-item__avatar finlann-list-item__avatar--income" />
+                        <div>
+                          <p className="finlann-list-item__title">Nenhuma entrada ainda</p>
+                          <p className="finlann-list-item__subtitle">
+                            Registre entradas para ver o resumo aqui
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <div className="finlann-list-item__right">
-                      <span className="finlann-list-item__value finlann-list-item__value--positive">
-                        {format(total)}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            )}
-          </section>
+                  )}
 
+                  {Object.entries(summary.incomesByType || {}).map(([typeId, total]) => {
+                    const label =
+                      typeId === "pix"
+                        ? "Pix"
+                        : typeId === "transfer"
+                        ? "Transferência"
+                        : typeId === "cash"
+                        ? "Dinheiro"
+                        : typeId
+                            .split("-")
+                            .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+                            .join(" ");
+
+                    const monthlyIncomesForType = financeState.incomes
+                      .filter((i) => i.type === typeId)
+                      .filter((i) =>
+                        isSameMonthYear(
+                          i.createdAt,
+                          currentMonthIndex,
+                          currentYear
+                        )
+                      );
+
+                    const lastIncome = monthlyIncomesForType.slice(-1)[0];
+                    const subtitle = lastIncome?.origin || "Entradas registradas";
+
+                    return (
+                      <button
+                        key={typeId}
+                        className="finlann-list-item"
+                        type="button"
+                        onClick={() =>
+                          setStatementIncomeType({ id: typeId, label })
+                        }
+                      >
+                        <div className="finlann-list-item__left">
+                          <span className="finlann-list-item__avatar finlann-list-item__avatar--income" />
+                          <div>
+                            <p className="finlann-list-item__title">{label}</p>
+                            <p className="finlann-list-item__subtitle">{subtitle}</p>
+                          </div>
+                        </div>
+                        <div className="finlann-list-item__right">
+                          <span className="finlann-list-item__value finlann-list-item__value--positive">
+                            {format(total)}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* Resumo de saídas oculto (mantido no código para possível uso futuro) */}
+          {false && (
           <section className="finlann-section">
             <header
               className="finlann-section__header finlann-section__header--clickable"
@@ -361,9 +390,6 @@ export default function Dashboard({
                             <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
                             <div>
                               <p className="finlann-list-item__title">{label}</p>
-                              <p className="finlann-list-item__subtitle">
-                                Saídas do mês nesta categoria
-                              </p>
                             </div>
                           </div>
                           <div className="finlann-list-item__right">
@@ -409,31 +435,15 @@ export default function Dashboard({
               </div>
             )}
           </section>
+          )}
 
-          {/* Terceiro bloco retrátil: Gastos fixos */}
+          {/* Bloco de Gastos fixos (sempre aberto) */}
           <section className="finlann-section">
-            <header
-              className="finlann-section__header finlann-section__header--clickable"
-              onClick={() => setShowFixedSummarySection((prev) => !prev)}
-            >
-              <h2 className="finlann-section__title">
-                <span
-                  className={
-                    "finlann-section__chevron" +
-                    (showFixedSummarySection ? " is-open" : "")
-                  }
-                >
-                  &gt;
-                </span>
-                Gastos fixos
-              </h2>
-              <span className="finlann-section__tag">
-                {showFixedSummarySection ? "Recolher" : "Mês atual"}
-              </span>
+            <header className="finlann-section__header">
+              <h2 className="finlann-section__title">Gastos fixos</h2>
             </header>
 
-            {showFixedSummarySection && (
-              <div className="finlann-list">
+            <div className="finlann-list">
                 {financeState.expenses.filter((e) => {
                   if (!e.isFixed) return false;
                   const refDate = e.purchaseDate || e.createdAt;
@@ -475,7 +485,6 @@ export default function Dashboard({
                     </div>
                   ))}
               </div>
-            )}
           </section>
 
           {/* Quarta caixa de resumo simples (sem retrátil) */}
@@ -527,37 +536,6 @@ export default function Dashboard({
         />
       )}
 
-      {statementCard && (
-        <CardStatementModal
-          card={statementCard}
-          currentMonthIndex={currentMonthIndex}
-          currentYear={currentYear}
-          expenses={financeState.expenses.filter(
-            (e) => e.method === "credit" && e.cardId === statementCard.id
-          )}
-          allCards={financeState.cards}
-          lastUsedCardId={lastUsedCardId}
-          onClose={() => setStatementCard(null)}
-          onUpdateCard={onUpdateCard}
-          onAddExpense={onAddExpense}
-          onRemoveExpenses={onRemoveExpenses}
-          onTransferExpenses={onTransferExpenses}
-          onUpdateExpenses={onUpdateExpenses}
-        />
-      )}
-
-      {statementIncomeType && (
-        <IncomeStatementModal
-          typeLabel={statementIncomeType.label}
-          typeId={statementIncomeType.id}
-          incomes={financeState.incomes.filter(
-            (i) => i.type === statementIncomeType.id
-          )}
-          onClose={() => setStatementIncomeType(null)}
-          onRemoveIncomes={onRemoveIncomes}
-          onUpdateIncomes={onUpdateIncomes}
-        />
-      )}
 
       {showMonthPicker && (
         <MonthPickerModal
@@ -715,9 +693,7 @@ export default function Dashboard({
                           <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
                           <div>
                             <p className="finlann-list-item__title">{label}</p>
-                            <p className="finlann-list-item__subtitle">
-                              Saídas do mês nesta categoria
-                            </p>
+                            
                           </div>
                         </div>
                         <div className="finlann-list-item__right">
@@ -772,10 +748,41 @@ export default function Dashboard({
         </Overlay>
       )}
 
+      {statementCard && (
+        <CardStatementModal
+          card={statementCard}
+          currentMonthIndex={currentMonthIndex}
+          currentYear={currentYear}
+          expenses={financeState.expenses.filter(
+            (e) => e.method === "credit" && e.cardId === statementCard.id
+          )}
+          allCards={financeState.cards}
+          lastUsedCardId={lastUsedCardId}
+          onClose={() => setStatementCard(null)}
+          onUpdateCard={onUpdateCard}
+          onAddExpense={onAddExpense}
+          onRemoveExpenses={onRemoveExpenses}
+          onTransferExpenses={onTransferExpenses}
+          onUpdateExpenses={onUpdateExpenses}
+        />
+      )}
+
+      {statementIncomeType && (
+        <IncomeStatementModal
+          typeLabel={statementIncomeType.label}
+          typeId={statementIncomeType.id}
+          incomes={financeState.incomes.filter(
+            (i) => i.type === statementIncomeType.id
+          )}
+          onClose={() => setStatementIncomeType(null)}
+          onRemoveIncomes={onRemoveIncomes}
+          onUpdateIncomes={onUpdateIncomes}
+        />
+      )}
+
       {showFixedStatement && (
         <Overlay onClose={() => setShowFixedStatement(false)} kind="expense">
-          <header className="finlann-modal__header">
-            <p className="finlann-modal__eyebrow">Balanço de saídas</p>
+          <header className="finlann-modal__header" style={{ marginBottom: 10 }}>
             <h2 className="finlann-modal__title">Resumo por categoria</h2>
           </header>
           <div className="finlann-modal__body finlann-modal__body--scroll">
@@ -819,27 +826,98 @@ export default function Dashboard({
                             .join(" ");
 
                     return (
-                      <button
+                      <div
                         key={categoryId}
-                        type="button"
-                        className="finlann-list-item"
+                        className="finlann-list-item finlann-list-item--stacked"
+                        role="button"
                         onClick={() => setCategoryStatement({ id: categoryId, label })}
                       >
-                        <div className="finlann-list-item__left">
-                          <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
+                        <div className="finlann-list-item__top-row">
+                          <div className="finlann-list-item__left">
+                          <button
+                            type="button"
+                            className="finlann-color-dot"
+                            style={{
+                              background: categoryColors[categoryId] || "#64748b",
+                              borderColor: "#020617",
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenColorCategory((prev) =>
+                                prev === categoryId ? null : categoryId
+                              );
+                            }}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setOpenColorCategory((prev) =>
+                                prev === categoryId ? null : categoryId
+                              );
+                            }}
+                            aria-label={`Escolher cor da categoria ${label}`}
+                          />
+
                           <div>
                             <p className="finlann-list-item__title">{label}</p>
-                            <p className="finlann-list-item__subtitle">
-                              Saídas do mês nesta categoria
-                            </p>
                           </div>
                         </div>
-                        <div className="finlann-list-item__right">
-                          <span className="finlann-list-item__value finlann-list-item__value--negative">
-                            {format(total)}
-                          </span>
+                          <div className="finlann-list-item__right">
+                            <span className="finlann-list-item__value finlann-list-item__value--negative">
+                              {format(total)}
+                            </span>
+                          </div>
                         </div>
-                      </button>
+
+                        {openColorCategory === categoryId && (
+                          <div
+                            className="finlann-color-row finlann-color-row--inline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {/* 5 cores pré-definidas */}
+                            {CATEGORY_COLOR_OPTIONS.slice(0, 5).map((color) => (
+                              <button
+                                key={color}
+                                type="button"
+                                className={
+                                  "finlann-color-dot" +
+                                  ((categoryColors[categoryId] || "#64748b") === color
+                                    ? " is-active"
+                                    : "")
+                                }
+                                style={{ background: color }}
+                                onClick={() => {
+                                  setCategoryColors((prev) => ({
+                                    ...prev,
+                                    [categoryId]: color,
+                                  }));
+                                  setOpenColorCategory(null);
+                                }}
+                              />
+                            ))}
+
+                            {/* 6ª bolinha: cor customizada via seletor nativo */}
+                            <label
+                              className="finlann-color-dot finlann-color-dot--custom"
+                              style={{
+                                background: categoryColors[categoryId] || "#64748b",
+                              }}
+                            >
+                              <input
+                                type="color"
+                                value={categoryColors[categoryId] || "#64748b"}
+                                onChange={(e) => {
+                                  const color = e.target.value;
+                                  setCategoryColors((prev) => ({
+                                    ...prev,
+                                    [categoryId]: color,
+                                  }));
+                                  // não fecha o seletor aqui, pra você poder arrastar
+                                }}
+                              />
+                            </label>
+                          </div>
+                        )}
+                      </div>
                     );
                   }
                 )}
@@ -866,11 +944,11 @@ export default function Dashboard({
             <h2 className="finlann-modal__title">{categoryStatement.label}</h2>
           </header>
           <div className="finlann-modal__body finlann-modal__body--scroll">
-            <div className="finlann-statement-table">
+            <div className="finlann-statement-table finlann-statement-table--category">
                 <div className="finlann-statement-row finlann-statement-row--header">
                   <span>Data</span>
-                  <span>Descrição</span>
-                  <span>Origem</span>
+                  <span>Desc.</span>
+                  <span>Orig</span>
                   <span>Parc.</span>
                   <span>Valor</span>
                 </div>
@@ -934,16 +1012,112 @@ export default function Dashboard({
                   })}
               </div>
             </div>
-          <footer className="finlann-modal__footer">
-            <button
-              type="button"
-              className="finlann-modal__secondary"
-              onClick={() => setCategoryStatement(null)}
-            >
-              Voltar
-            </button>
+          <footer className="finlann-modal__footer" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                type="button"
+                className="finlann-modal__close"
+                onClick={() => {
+                  setCategorySelectionMode((prev) => !prev);
+                  if (categorySelectionMode) {
+                    setCategorySelectedIds([]);
+                  }
+                }}
+                aria-label={
+                  categorySelectionMode ? "Sair do modo seleção" : "Selecionar saídas"
+                }
+              >
+                {categorySelectionMode ? "☑" : "☐"}
+              </button>
+            </div>
+
+            <div style={{ display: "flex", gap: 6 }}>
+              {categorySelectionMode && (
+                <>
+                  <button
+                    type="button"
+                    className="finlann-modal__secondary"
+                    disabled={categorySelectedIds.length !== 1}
+                    onClick={() => {
+                      if (categorySelectedIds.length !== 1) return;
+                      const target = financeState.expenses.find(
+                        (exp) => exp.id === categorySelectedIds[0]
+                      );
+                      if (!target) return;
+                      setCategoryEditingExpense(target);
+                    }}
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    className="finlann-modal__secondary"
+                    disabled={categorySelectedIds.length === 0}
+                    onClick={() => {
+                      if (!categorySelectedIds.length) return;
+                      onRemoveExpenses?.(categorySelectedIds);
+                      setCategorySelectedIds([]);
+                      setCategorySelectionMode(false);
+                    }}
+                  >
+                    Excluir
+                  </button>
+                </>
+              )}
+
+              <button
+                type="button"
+                className="finlann-modal__secondary"
+                onClick={() => {
+                  setCategoryStatement(null);
+                  setCategorySelectionMode(false);
+                  setCategorySelectedIds([]);
+                }}
+              >
+                Voltar
+              </button>
+            </div>
           </footer>
         </Overlay>
+      )}
+
+      {categoryEditingExpense && (
+        <ExpenseModal
+          onClose={() => {
+            setCategoryEditingExpense(null);
+            setCategorySelectionMode(false);
+            setCategorySelectedIds([]);
+          }}
+          onSave={(updatedExpense) => {
+            onUpdateExpenses?.((expense) => {
+              if (expense.id !== categoryEditingExpense.id) return undefined;
+              return {
+                ...expense,
+                ...updatedExpense,
+              };
+            });
+            setCategoryEditingExpense(null);
+            setCategorySelectionMode(false);
+            setCategorySelectedIds([]);
+          }}
+          onAddCard={onAddCard}
+          existingCards={financeState.cards}
+          lastUsedCardId={lastUsedCardId}
+          initialPaymentType={categoryEditingExpense.method}
+          lockCardId={
+            categoryEditingExpense.method === "credit"
+              ? categoryEditingExpense.cardId
+              : null
+          }
+          allowDateEdit
+          initialDate={
+            (categoryEditingExpense.purchaseDate ||
+              categoryEditingExpense.createdAt
+            ).slice(0, 10)
+          }
+          initialExpense={categoryEditingExpense}
+        />
       )}
     </div>
   );

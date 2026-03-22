@@ -175,35 +175,28 @@
 .finlann-cards-row {
   position: relative; /* permite controlar a camada via z-index */
   display: grid;
-  grid-template-columns: auto auto; /* só duas colunas: Entradas e Saídas lado a lado */
-  justify-content: center; /* centraliza o par de balões */
-  row-gap: 8px; /* espaço entre a linha de cima e o saldo */
-  column-gap: 0; /* distancia controlada por margin dos cards */
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 chips ocupando de margem a margem */
+  justify-content: center;
+  row-gap: 8px;
+  column-gap: 8px; /* pequeno espaço entre eles */
   margin-top: 12px; /* espaço entre o mês/ano e o resumo de Entradas/Saídas/Saldo */
-  padding: 0 12px; /* mesmo respiro lateral das seções abaixo (Resumo de entradas/saídas) */
+  padding: 0 12px; /* mesmas margens laterais dos boxes (ex.: Gastos fixos) */
   z-index: 2; /* fica acima do box grande */
 }
 
 /* Em telas maiores, ajusta os balões de resumo geral */
 @media (min-width: 769px) {
+  /* Em telas maiores, 3 colunas iguais ocupando a largura útil do conteúdo */
+  .finlann-cards-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 8px;
+  }
+
   .finlann-card--income,
-  .finlann-card--expense {
-    max-width: 200px; /* balões um pouco menores */
-  }
-
-  /* 1px de distância visual entre Entradas e Saídas */
-  .finlann-card--income {
-    margin-right: 1px;
-  }
-
-  .finlann-card--expense {
-    margin-left: 1px;
-  }
-
+  .finlann-card--expense,
   .finlann-card--balance {
-    max-width: 260px; /* saldo maior que entradas/saídas */
-    grid-column: 1 / -1; /* sempre na linha de baixo, centralizado */
-    justify-self: center;
+    min-width: 0;   /* deixa o grid controlar a largura */
+    max-width: none;
   }
 }
 
@@ -305,18 +298,35 @@
 .finlann-card--balance {
   padding-top: 8px;
   padding-bottom: 8px;
+  padding-left: 16px;  /* mais respiro interno nas laterais */
+  padding-right: 16px;
+}
+
+/* Contêiner empilhado para cartão + fatura (Config > Cartões) */
+.finlann-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 /* Cardão da página de Cartões (Config) */
 .finlann-card--full {
-  border-radius: 20px;
+  border-radius: 20px 20px 12px 12px;
   padding: 12px;
   color: #e5e7eb;
 }
 
+/* Box de fatura colado embaixo do cartão, mesma largura */
+.finlann-card-summary--attached {
+  margin-top: 0;
+  border-radius: 0 0 16px 16px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.9);
+}
+
 .finlann-section--fixed {
   margin-top: 2px;  /* quase colado no card de saldo, com respiro mínimo */
-  margin-bottom: 12px; 
+  margin-bottom: 24px; /* mais espaço abaixo do gráfico de pizza para não "colar" nos blocos abaixo */
   padding-left: 16px;
   padding-right: 16px;
 }
@@ -565,6 +575,19 @@
   background: rgba(15, 23, 42, 0.9);
   color: inherit;
   text-align: left;
+}
+
+/* Variante com segunda linha (ex.: seletor de cor por categoria) */
+.finlann-list-item--stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.finlann-list-item__top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 .finlann-list-item__left {
@@ -1029,14 +1052,37 @@
 }
 
 .finlann-color-dot {
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px; /* garante círculo perfeito */
   border: 2px solid transparent;
+  padding: 0;
+  display: inline-block;
+}
+
+/* linha de seleção de cor embutida na própria célula (abaixo do nome da categoria) */
+.finlann-color-row--inline {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
 }
 
 .finlann-color-dot.is-active {
   border-color: #e5e7eb;
+}
+
+/* bolinha "custom" que abre o seletor de cor do navegador */
+.finlann-color-dot--custom {
+  position: relative;
+  overflow: hidden;
+}
+
+.finlann-color-dot--custom input[type="color"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .finlann-modal__footer {
@@ -1159,6 +1205,24 @@
   }
 }
 
+/* Layout específico para popup "Saídas por categoria" (5 colunas: Data | Descrição | Origem | Parc. | Valor) */
+.finlann-statement-table--category .finlann-statement-row {
+  grid-template-columns: 44px minmax(0, 1.4fr) 64px 56px minmax(72px, 96px);
+  column-gap: 6px;
+}
+
+/* Em telas bem estreitas, deixa tudo mais justinho: menos espaço e colunas levemente ajustadas */
+@media (max-width: 420px) {
+  .finlann-statement-table--category .finlann-statement-row {
+    grid-template-columns: 40px minmax(0, 1.1fr) 68px 48px minmax(68px, 88px);
+    column-gap: 4px;
+  }
+
+  .finlann-statement-table--category .finlann-statement-row span {
+    font-size: 11px;
+  }
+}
+
 /* Tabelas de extrato (entradas e faturas) */
 .finlann-statement-table {
   display: flex;
@@ -1219,7 +1283,8 @@
 /* Tabela de fatura do cartão: layout mais compacto para o Valor não "puxar" tudo para a direita */
 .finlann-statement-table--card .finlann-statement-row {
   /* Data | Descrição | Parc. | Valor */
-  grid-template-columns: 40px minmax(0, 1.6fr) 60px 80px;
+  grid-template-columns: 48px minmax(0, 1.6fr) 60px 80px;
+  column-gap: 10px; /* dá um respiro maior entre Data e Descrição */
 }
 
 .finlann-statement-row--header {
@@ -1237,9 +1302,12 @@
 
 .finlann-value-cell {
   display: inline-flex;
-  justify-content: flex-end; /* valor grudadinho na direita da coluna */
+  /* R$ alinhado com o título "Valor" (lado esquerdo da coluna)
+     e o número alinhado com a margem direita da coluna */
+  justify-content: space-between;
+  align-items: center;
   width: 100%;
-  gap: 2px;
+  gap: 4px;
   font-variant-numeric: tabular-nums;
 }
 
