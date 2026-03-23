@@ -317,11 +317,74 @@
 }
 
 /* Box de fatura colado embaixo do cartão, mesma largura */
-.finlann-card-summary--attached {
+.finlann-card-summary--inline {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.finlann-card-full__footer-row {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.finlann-card-summary__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 250, 252, 0.85);
+  background: rgba(15, 23, 42, 0.4);
+  color: #f9fafb;
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+}
+
+.finlann-card-summary__chevron {
+  display: inline-block;
+  transition: transform 160ms ease-out;
+}
+
+.finlann-card-summary__chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.finlann-card-actions {
   margin-top: 0;
-  border-radius: 0 0 16px 16px;
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(15, 23, 42, 0.9);
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.finlann-card-action--edit,
+.finlann-card-action--delete {
+  width: 54px;
+  height: 30px;
+  border-radius: 999px; /* pill mais alongada, menos "bolinha" */
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.finlann-card-action__icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* botão de lixeira com fundo vermelho de alerta; mais específico para sobrescrever finlann-modal__secondary */
+.finlann-card-actions .finlann-card-action--edit,
+.finlann-card-actions .finlann-card-action--delete {
+  border-color: rgba(248, 250, 252, 0.9);
+}
+
+.finlann-card-actions .finlann-card-action--delete {
+  background: linear-gradient(135deg, #b91c1c, #ef4444);
+  color: #fef2f2;
 }
 
 .finlann-section--fixed {
@@ -1038,6 +1101,22 @@
 
 .finlann-card-add:hover {
   background: rgba(30, 64, 175, 0.7);
+}
+
+/* botão grande "+ Adicionar cartão" na aba de cartões */
+.finlann-card-add-full {
+  margin-top: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: #ecfdf5;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .finlann-conditional {

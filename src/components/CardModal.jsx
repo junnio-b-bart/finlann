@@ -14,15 +14,32 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
 
   const [name, setName] = useState(initialCard?.label || "");
   const [colorId, setColorId] = useState(COLORS[0].id);
+  const [customColor, setCustomColor] = useState(null);
   const [closeDay, setCloseDay] = useState(initialCard?.billingCloseDay || "");
   const [dueDay, setDueDay] = useState(initialCard?.billingDueDay || "");
-  const [kind, setKind] = useState(initialCard?.kind || initialKind); // credit | debit
+
+  // seleção independente de Crédito e Débito; no save convertemos para kind: "credit" | "debit" | "both"
+  const [kinds, setKinds] = useState(() => {
+    const initial = initialCard?.kind || initialKind;
+    if (initial === "both") {
+      return { credit: true, debit: true };
+    }
+    if (initial === "debit") {
+      return { credit: false, debit: true };
+    }
+    // default: crédito
+    return { credit: true, debit: false };
+  });
 
   useEffect(() => {
     if (initialCard?.color) {
       const found = COLORS.find((c) => c.value === initialCard.color);
       if (found) {
         setColorId(found.id);
+        setCustomColor(null);
+      } else {
+        setColorId(COLORS[0].id);
+        setCustomColor(initialCard.color);
       }
     }
   }, [initialCard]);
@@ -30,13 +47,24 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
   function handleSave() {
     if (!name.trim()) return; // depois podemos mostrar erro visual
 
-    const color = COLORS.find((c) => c.id === colorId) ?? COLORS[0];
+    const baseColor = COLORS.find((c) => c.id === colorId) ?? COLORS[0];
+    const colorValue = customColor || baseColor.value;
     const nowIso = new Date().toISOString();
+
+    // converte seleção múltipla em uma string única de tipo
+    let kind;
+    if (kinds.credit && kinds.debit) {
+      kind = "both";
+    } else if (kinds.debit) {
+      kind = "debit";
+    } else {
+      kind = "credit";
+    }
 
     onSave?.({
       id: initialCard?.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       label: name.trim(),
-      color: color.value,
+      color: colorValue,
       billingCloseDay: closeDay.trim(),
       billingDueDay: dueDay.trim(),
       kind,
@@ -80,21 +108,33 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
           <label className="finlann-field__label">Tipo de cartão</label>
           <div className="finlann-chips">
             {[{ id: "credit", label: "Crédito" }, { id: "debit", label: "Débito" }].map(
-              (option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  className={
-                    "finlann-chip " +
-                    (kind === option.id
-                      ? "finlann-chip--solid is-active"
-                      : "finlann-chip--outline")
-                  }
-                  onClick={() => setKind(option.id)}
-                >
-                  {option.label}
-                </button>
-              )
+              (option) => {
+                const isActive = kinds[option.id];
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={
+                      "finlann-chip " +
+                      (isActive
+                        ? "finlann-chip--solid is-active"
+                        : "finlann-chip--outline")
+                    }
+                    onClick={() =>
+                      setKinds((prev) => {
+                        const next = { ...prev, [option.id]: !prev[option.id] };
+                        // garante que pelo menos um fique selecionado
+                        if (!next.credit && !next.debit) {
+                          return prev;
+                        }
+                        return next;
+                      })
+                    }
+                  >
+                    {option.label}
+                  </button>
+                );
+              }
             )}
           </div>
         </div>
@@ -108,12 +148,38 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
                 type="button"
                 className={
                   "finlann-color-dot" +
-                  (color.id === colorId ? " is-active" : "")
+                  (color.id === colorId && !customColor ? " is-active" : "")
                 }
                 style={{ background: color.value }}
-                onClick={() => setColorId(color.id)}
+                onClick={() => {
+                  setColorId(color.id);
+                  setCustomColor(null);
+                }}
               />
             ))}
+
+            {/* 6ª bolinha: cor customizada via seletor nativo */}
+            <label
+              className={
+                "finlann-color-dot finlann-color-dot--custom" +
+                (customColor ? " is-active" : "")
+              }
+              style={{
+                background:
+                  customColor || COLORS.find((c) => c.id === colorId)?.value,
+              }}
+            >
+              <input
+                type="color"
+                value={
+                  customColor || COLORS.find((c) => c.id === colorId)?.value
+                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setCustomColor(value);
+                }}
+              />
+            </label>
           </div>
         </div>
 
