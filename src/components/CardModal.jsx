@@ -75,13 +75,13 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
 
   return (
     <Overlay onClose={onClose} closeOnBackdrop={false}>
-      <header className="finlann-modal__header">
+      <header className="finlann-modal__header finlann-card-modal__header">
         <div>
-          <p className="finlann-modal__eyebrow">
-            {isEditing ? "Editar cartão" : "Novo cartão"}
-          </p>
+          {isEditing && (
+            <p className="finlann-modal__eyebrow">Editar cartão</p>
+          )}
           <h2 className="finlann-modal__title">
-            {isEditing ? "Editar cartão" : "Cadastrar cartão"}
+            {isEditing ? "Editar cartão" : "Cadastrar novo cartão"}
           </h2>
         </div>
         <button

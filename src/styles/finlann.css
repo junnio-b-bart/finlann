@@ -1193,6 +1193,17 @@
   background: linear-gradient(135deg, #16a34a, #22c55e);
 }
 
+/* Ajuste específico do header do modal de cartão: X bem no canto superior direito */
+.finlann-card-modal__header {
+  position: relative;
+}
+
+.finlann-card-modal__header .finlann-modal__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
 /* Toast / notificação inline no app */
 .finlann-toast {
   position: fixed;
