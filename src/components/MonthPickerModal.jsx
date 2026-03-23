@@ -41,6 +41,8 @@ export default function MonthPickerModal({ onClose, initialMonthIndex, initialYe
 
   const monthWheelRef = useRef(null);
   const yearWheelRef = useRef(null);
+  const monthScrollTimeoutRef = useRef(null);
+  const yearScrollTimeoutRef = useRef(null);
 
   function getItemClass(baseIndex, selectedIndex) {
     const distance = Math.abs(baseIndex - selectedIndex);
@@ -71,6 +73,27 @@ export default function MonthPickerModal({ onClose, initialMonthIndex, initialYe
       const next = Math.min(Math.max(current + step, 0), length - 1);
       return next;
     });
+  }
+
+  // Quando o usuário faz scroll (touch/mouse), após um pequeno delay usamos o item
+  // que ficou mais próximo do centro da coluna como selecionado.
+  function syncIndexToCenter(ref, setIndex, length, timeoutRef) {
+    if (!ref.current) return;
+    const container = ref.current;
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      const centerY = container.scrollTop + container.clientHeight / 2;
+      // converte posição do centro em índice lógico aproximado
+      const approxRow = Math.round(centerY / ITEM_HEIGHT - 0.5);
+      const logicalIndex = approxRow - PADDING_TOP_ROWS;
+      const clampedIndex = Math.min(Math.max(logicalIndex, 0), length - 1);
+      setIndex(clampedIndex);
+      centerOnIndex(ref, clampedIndex, "smooth");
+    }, 80);
   }
 
   // Toda vez que o índice de mês/ano muda, centraliza o item selecionado
@@ -108,6 +131,14 @@ export default function MonthPickerModal({ onClose, initialMonthIndex, initialYe
                 e.preventDefault();
                 handleWheelStep(setMonthIndex, MONTHS.length, e.deltaY);
               }}
+              onScroll={() =>
+                syncIndexToCenter(
+                  monthWheelRef,
+                  setMonthIndex,
+                  MONTHS.length,
+                  monthScrollTimeoutRef
+                )
+              }
             >
               {Array.from(
                 { length: MONTHS.length + PADDING_TOP_ROWS + PADDING_BOTTOM_ROWS },
@@ -148,6 +179,14 @@ export default function MonthPickerModal({ onClose, initialMonthIndex, initialYe
                 e.preventDefault();
                 handleWheelStep(setYearIndex, YEARS.length, e.deltaY);
               }}
+              onScroll={() =>
+                syncIndexToCenter(
+                  yearWheelRef,
+                  setYearIndex,
+                  YEARS.length,
+                  yearScrollTimeoutRef
+                )
+              }
             >
               {Array.from(
                 { length: YEARS.length + PADDING_TOP_ROWS + PADDING_BOTTOM_ROWS },

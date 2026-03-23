@@ -15,8 +15,12 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
   const [name, setName] = useState(initialCard?.label || "");
   const [colorId, setColorId] = useState(COLORS[0].id);
   const [customColor, setCustomColor] = useState(null);
+  const [useCustomColor, setUseCustomColor] = useState(false);
   const [closeDay, setCloseDay] = useState(initialCard?.billingCloseDay || "");
   const [dueDay, setDueDay] = useState(initialCard?.billingDueDay || "");
+
+  const presetColor = COLORS.find((c) => c.id === colorId)?.value || COLORS[0].value;
+  const effectiveColor = useCustomColor && customColor ? customColor : presetColor;
 
   // seleção independente de Crédito e Débito; no save convertemos para kind: "credit" | "debit" | "both"
   const [kinds, setKinds] = useState(() => {
@@ -37,9 +41,11 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
       if (found) {
         setColorId(found.id);
         setCustomColor(null);
+        setUseCustomColor(false);
       } else {
         setColorId(COLORS[0].id);
         setCustomColor(initialCard.color);
+        setUseCustomColor(true);
       }
     }
   }, [initialCard]);
@@ -47,8 +53,7 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
   function handleSave() {
     if (!name.trim()) return; // depois podemos mostrar erro visual
 
-    const baseColor = COLORS.find((c) => c.id === colorId) ?? COLORS[0];
-    const colorValue = customColor || baseColor.value;
+    const colorValue = effectiveColor;
     const nowIso = new Date().toISOString();
 
     // converte seleção múltipla em uma string única de tipo
@@ -74,7 +79,7 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
   }
 
   return (
-    <Overlay onClose={onClose} closeOnBackdrop={false}>
+    <Overlay onClose={onClose} closeOnBackdrop={false} accentColor={effectiveColor}>
       <header className="finlann-modal__header finlann-card-modal__header">
         <div>
           {isEditing && (
@@ -148,12 +153,12 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
                 type="button"
                 className={
                   "finlann-color-dot" +
-                  (color.id === colorId && !customColor ? " is-active" : "")
+                  (color.id === colorId && !useCustomColor ? " is-active" : "")
                 }
                 style={{ background: color.value }}
                 onClick={() => {
                   setColorId(color.id);
-                  setCustomColor(null);
+                  setUseCustomColor(false);
                 }}
               />
             ))}
@@ -162,21 +167,19 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
             <label
               className={
                 "finlann-color-dot finlann-color-dot--custom" +
-                (customColor ? " is-active" : "")
+                (useCustomColor ? " is-active" : "")
               }
               style={{
-                background:
-                  customColor || COLORS.find((c) => c.id === colorId)?.value,
+                background: customColor || presetColor,
               }}
             >
               <input
                 type="color"
-                value={
-                  customColor || COLORS.find((c) => c.id === colorId)?.value
-                }
+                value={customColor || presetColor}
                 onChange={(e) => {
                   const value = e.target.value;
                   setCustomColor(value);
+                  setUseCustomColor(true);
                 }}
               />
             </label>

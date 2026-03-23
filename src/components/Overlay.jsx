@@ -2,7 +2,7 @@ export default function Overlay({ children, onClose, accentColor, kind, closeOnB
   const panelStyle = accentColor
     ? {
         "--finlann-accent": accentColor,
-        backgroundImage: `linear-gradient(135deg, rgba(2, 6, 23, 0.35), #020617 65%), ${accentColor}`,
+        background: `linear-gradient(135deg, rgba(2, 6, 23, 0.35), #020617 55%), ${accentColor}`,
       }
     : undefined;
 

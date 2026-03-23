@@ -362,18 +362,27 @@
 
 .finlann-card-action--edit,
 .finlann-card-action--delete {
-  width: 54px;
   height: 30px;
   border-radius: 999px; /* pill mais alongada, menos "bolinha" */
   padding: 0 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+}
+
+.finlann-card-action--edit {
+  min-width: 70px; /* espaço pro ícone + texto "Editar" */
 }
 
 .finlann-card-action__icon {
   width: 16px;
   height: 16px;
+}
+
+.finlann-card-action__label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 /* botão de lixeira com fundo vermelho de alerta; mais específico para sobrescrever finlann-modal__secondary */

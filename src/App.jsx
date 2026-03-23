@@ -366,7 +366,15 @@ export default function App() {
           )}
         </main>
 
-        <BottomNav current={tab} onChange={setTab} />
+        <BottomNav
+          current={tab}
+          onChange={(nextTab) => {
+            if (nextTab === "settings") {
+              setSettingsView("root"); // sempre volta para a tela principal de Config
+            }
+            setTab(nextTab);
+          }}
+        />
       </div>
     </div>
   );

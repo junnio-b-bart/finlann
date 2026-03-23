@@ -114,6 +114,7 @@ export default function SettingsCards({ financeState, onAddCard, onUpdateCard, o
                         }}
                       >
                         <img src={penIcon} alt="Editar" className="finlann-card-action__icon" />
+                        <span className="finlann-card-action__label">Editar</span>
                       </button>
                       <button
                         type="button"
