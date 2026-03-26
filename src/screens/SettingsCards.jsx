@@ -42,7 +42,10 @@ export default function SettingsCards({ financeState, onAddCard, onUpdateCard, o
   return (
     <div className="finlann-dashboard">
       <div className="finlann-header-strip">
-        <header className="finlann-header" style={{ justifyContent: "flex-start", columnGap: 8 }}>
+        <header
+          className="finlann-header"
+          style={{ justifyContent: "flex-start", columnGap: 8 }}
+        >
           <button
             type="button"
             className="finlann-modal__close"
@@ -53,127 +56,129 @@ export default function SettingsCards({ financeState, onAddCard, onUpdateCard, o
             ‹
           </button>
           <div className="finlann-header__left" style={{ marginLeft: 8 }}>
-            <h1 className="finlann-section__title">Cartões</h1>
+            <h1 className="finlann-section__title">Seus cartões</h1>
           </div>
         </header>
       </div>
 
-      {cardsWithUsage.length > 0 ? (
-        <section className="finlann-section" style={{ marginTop: 12 }}>
-          <div className="finlann-section__header">
-            <h2 className="finlann-section__title">Seus cartões</h2>
-          </div>
+      {/*
+        Mesma ideia da tela de histórico: uma section com classe
+        finlann-section--history + finlann-section__scroll para limitar
+        o conteúdo entre o header e o menu inferior, com scroll interno.
+      */}
+      <section className="finlann-section finlann-section--history">
+        <div className="finlann-section__scroll">
+          {cardsWithUsage.length > 0 ? (
+            <>
+              {/* título "Seus cartões" já está no header principal */}
 
-          <div className="finlann-list" style={{ marginTop: 4 }}>
-            {cardsWithUsage.map(({ card, usageCount, monthTotal }) => {
-              const isExpanded = expandedCardId === card.id;
+              <div className="finlann-list" style={{ marginTop: 12 }}>
+                {cardsWithUsage.map(({ card, usageCount, monthTotal }) => {
+                  const isExpanded = expandedCardId === card.id;
 
-              return (
-              <article key={card.id} className="finlann-card-stack">
-                <div
-                  className="finlann-card finlann-card--full"
-                  style={{ background: card.color || undefined }}
-                >
-                  <div className="finlann-card-full__header">
-                    <span className="finlann-card-full__label">
-                      Cartão de crédito
-                    </span>
-                  </div>
-
-                  <div className="finlann-card-full__body">
-                    <p className="finlann-card-full__name">{card.label}</p>
-                    <p className="finlann-card-full__meta">
-                      Fecha em {card.billingCloseDay || "?"} · Vence em {card.billingDueDay || "?"}
-                    </p>
-                  </div>
-
-                  <div className="finlann-card-full__footer-row">
-                    <button
-                      type="button"
-                      className="finlann-card-summary__toggle"
-                      onClick={() =>
-                        setExpandedCardId((prev) => (prev === card.id ? null : card.id))
-                      }
-                    >
-                      <span
-                        className={
-                          "finlann-card-summary__chevron" + (isExpanded ? " is-open" : "")
-                        }
+                  return (
+                    <article key={card.id} className="finlann-card-stack">
+                      <div
+                        className="finlann-card finlann-card--full"
+                        style={{ background: card.color || undefined }}
                       >
-                        ▾
-                      </span>
-                      <span className="finlann-card-summary__label">Fatura do mês</span>
-                    </button>
+                        <div className="finlann-card-full__header">
+                          <span className="finlann-card-full__label">
+                            Cartão de crédito
+                          </span>
+                        </div>
 
-                    <div className="finlann-card-actions">
-                      <button
-                        type="button"
-                        className="finlann-modal__secondary finlann-card-action--edit"
-                        onClick={() => {
-                          alert("Em breve: edição completa do cartão a partir desta tela.");
-                        }}
-                      >
-                        <img src={penIcon} alt="Editar" className="finlann-card-action__icon" />
-                        <span className="finlann-card-action__label">Editar</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="finlann-modal__secondary finlann-card-action--delete"
-                        onClick={() => {
-                          if (!window.confirm("Tem certeza que deseja remover este cartão?")) return;
-                          onDeleteCard?.(card.id);
-                        }}
-                      >
-                        <img src={trashIcon} alt="Excluir" className="finlann-card-action__icon" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {isExpanded && (
-                    <div className="finlann-card-summary finlann-card-summary--inline">
-                      <div className="finlann-card-summary__row">
-                        <div>
-                          <p className="finlann-card-summary__hint">
-                            Total previsto neste cartão
+                        <div className="finlann-card-full__body">
+                          <p className="finlann-card-full__name">{card.label}</p>
+                          <p className="finlann-card-full__meta">
+                            Fecha em {card.billingCloseDay || "?"} · Vence em {card.billingDueDay || "?"}
                           </p>
                         </div>
-                        <p className="finlann-card-summary__value">
-                          {monthTotal.toLocaleString("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </article>
-            );
-            })}
-          </div>
 
-          <button
-            type="button"
-            className="finlann-card-add-full"
-            onClick={() => setShowAddCardModal(true)}
-          >
-            + Adicionar cartão
-          </button>
-        </section>
-      ) : (
-        <section className="finlann-section" style={{ marginTop: 12 }}>
-          <p className="finlann-header__subtitle">
-            Nenhum cartão cadastrado ainda. Crie um cartão ao registrar uma saída no crédito.
-          </p>
-          <button
-            type="button"
-            className="finlann-card-add-full"
-            onClick={() => setShowAddCardModal(true)}
-          >
-            + Adicionar cartão
-          </button>
-        </section>
-      )}
+                        <div className="finlann-card-full__footer-row">
+                          <button
+                            type="button"
+                            className="finlann-card-summary__toggle"
+                            onClick={() =>
+                              setExpandedCardId((prev) => (prev === card.id ? null : card.id))
+                            }
+                          >
+                            <span
+                              className={
+                                "finlann-card-summary__chevron" + (isExpanded ? " is-open" : "")
+                              }
+                            >
+                              ▾
+                            </span>
+                            <span className="finlann-card-summary__label">Fatura do mês</span>
+                          </button>
+
+                          <div className="finlann-card-actions">
+                            <button
+                              type="button"
+                              className="finlann-modal__secondary finlann-card-action--edit"
+                              onClick={() => {
+                                alert("Em breve: edição completa do cartão a partir desta tela.");
+                              }}
+                            >
+                              <img src={penIcon} alt="Editar" className="finlann-card-action__icon" />
+                              <span className="finlann-card-action__label">Editar</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="finlann-modal__secondary finlann-card-action--delete"
+                              onClick={() => {
+                                if (!window.confirm("Tem certeza que deseja remover este cartão?")) return;
+                                onDeleteCard?.(card.id);
+                              }}
+                            >
+                              <img src={trashIcon} alt="Excluir" className="finlann-card-action__icon" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {isExpanded && (
+                          <div className="finlann-card-summary finlann-card-summary--inline">
+                            <div className="finlann-card-summary__row">
+                              <div>
+                                <p className="finlann-card-summary__hint">
+                                  Total previsto neste cartão
+                                </p>
+                              </div>
+                              <p className="finlann-card-summary__value">
+                                {monthTotal.toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div style={{ marginTop: 12 }}>
+              <p className="finlann-header__subtitle">
+                Nenhum cartão cadastrado ainda. Crie um cartão ao registrar uma saída no crédito.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Botão de ação fora da área rolável, colado acima da barra de menu */}
+      <button
+        type="button"
+        className="finlann-card-add-full"
+        style={{ margin: "12px 12px 0", width: "calc(100% - 24px)" }}
+        onClick={() => setShowAddCardModal(true)}
+      >
+        + Adicionar cartão
+      </button>
 
       {showAddCardModal && (
         <CardModal
