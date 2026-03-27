@@ -1046,8 +1046,36 @@ export default function Dashboard({
                     }
 
                     return (
-                      <div key={e.id} className="finlann-statement-row">
-                        <span>{dateLabel}</span>
+                      <div
+                        key={e.id}
+                        className={"finlann-statement-row" + (categorySelectionMode && categorySelectedIds.includes(e.id) ? " finlann-statement-row--selected" : "")}
+                        onClick={() => {
+                          if (!categorySelectionMode) return;
+                          setCategorySelectedIds((prev) =>
+                            prev.includes(e.id)
+                              ? prev.filter((id) => id !== e.id)
+                              : [...prev, e.id]
+                          );
+                        }}
+                      >
+                        <span onClick={(ev) => ev.stopPropagation()}>
+                          {categorySelectionMode ? (
+                            <input
+                              type="checkbox"
+                              checked={categorySelectedIds.includes(e.id)}
+                              onChange={(ev) => {
+                                const checked = ev.target.checked;
+                                setCategorySelectedIds((prev) =>
+                                  checked
+                                    ? [...prev, e.id]
+                                    : prev.filter((id) => id !== e.id)
+                                );
+                              }}
+                            />
+                          ) : (
+                            dateLabel
+                          )}
+                        </span>
                         <span className="finlann-statement-desc">
                           {e.description || "(sem descrição)"}
                         </span>

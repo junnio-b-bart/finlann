@@ -11,6 +11,7 @@ import "./styles/globals.css";
 import "./styles/finlann.css";
 import loadingStep1 from "./assets/waitingscreen/progresso empty.png";
 import loadingStep2 from "./assets/waitingscreen/progresso empty (2).png";
+import logoFinlann from "./assets/FinlannLogo.png";
 
 const STORAGE_KEY = "finlann-state-v1";
 
@@ -278,6 +279,9 @@ export default function App() {
       <div className="app-root">
         <div className="app-shell">
           <main className="finlann-loading-screen">
+            <div className="finlann-loading-logo-pill">
+              <img src={logoFinlann} alt="Finlann" className="finlann-loading-logo-img" />
+            </div>
             <img
               src={currentImage}
               alt="Abrindo Finlann"
@@ -297,12 +301,14 @@ export default function App() {
       <div className="app-root">
         <div className="app-shell">
           <main className="finlann-loading-screen">
+            <div className="finlann-loading-logo-pill">
+              <img src={logoFinlann} alt="Finlann" className="finlann-loading-logo-img" />
+            </div>
             <img
               src={currentImage}
               alt="Carregando Finlann"
               className="finlann-loading-screen__image"
             />
-            <p className="finlann-loading">Carregando seus dados...</p>
           </main>
         </div>
       </div>

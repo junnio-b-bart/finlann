@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Overlay from "./Overlay.jsx";
+import { formatCurrencyInput, parseCurrencyInput } from "../utils/currency.js";
 
 function formatAmountDisplay(value) {
   return value.toLocaleString("pt-BR", {
@@ -8,15 +9,6 @@ function formatAmountDisplay(value) {
   });
 }
 
-function parseAmount(raw) {
-  if (!raw) return 0;
-  const normalized = raw
-    .replace(/[^0-9,\.]/g, "")
-    .replace(/\./g, "")
-    .replace(/,/g, ".");
-  const value = Number(normalized);
-  return Number.isNaN(value) ? 0 : value;
-}
 
 export default function HistoryEditEntryModal({ entry, onClose, onSave, existingCards }) {
   if (!entry) return null;
@@ -81,34 +73,36 @@ export default function HistoryEditEntryModal({ entry, onClose, onSave, existing
       </header>
 
       <div className="finlann-modal__body">
-        <div style={{ display: "flex", gap: 8 }}>
-          <div className="finlann-field" style={{ flex: 1 }}>
-            <label className="finlann-field__label">Descrição</label>
-            <input
-              className="finlann-field__input"
-              value={description}
-              onChange={(e) => {
-                if (!hasTypedDescription && e.target.value !== entry.description) {
-                  setHasTypedDescription(true);
-                }
-                setDescription(e.target.value);
-              }}
-            />
-          </div>
+        <div className="finlann-field">
+          <label className="finlann-field__label">Descrição</label>
+          <input
+            className="finlann-field__input"
+            value={description}
+            onChange={(e) => {
+              if (!hasTypedDescription && e.target.value !== entry.description) {
+                setHasTypedDescription(true);
+              }
+              setDescription(e.target.value);
+            }}
+          />
+        </div>
 
-          <div className="finlann-field finlann-field--amount" style={{ flex: 1 }}>
-            <label className="finlann-field__label">Valor</label>
-            <input
-              className="finlann-field__input finlann-field__input--amount"
-              value={amountText}
-              onChange={(e) => {
-                if (!hasTypedAmount && e.target.value !== formatAmountDisplay(entry.amount)) {
-                  setHasTypedAmount(true);
-                }
-                setAmountText(e.target.value);
-              }}
-            />
-          </div>
+        <div className="finlann-field finlann-field--amount">
+          <label className="finlann-field__label">Valor</label>
+          <input
+            className="finlann-field__input finlann-field__input--amount"
+            placeholder="R$ 0,00"
+            inputMode="decimal"
+            value={amountText}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (!hasTypedAmount && raw !== "") {
+                setHasTypedAmount(true);
+              }
+              const formatted = formatCurrencyInput(raw);
+              setAmountText(formatted);
+            }}
+          />
         </div>
 
         {isIncome ? (
@@ -124,11 +118,25 @@ export default function HistoryEditEntryModal({ entry, onClose, onSave, existing
 
             <div className="finlann-field">
               <label className="finlann-field__label">Tipo</label>
-              <input
-                className="finlann-field__input"
-                value={extra}
-                onChange={(e) => setExtra(e.target.value)}
-              />
+              <div className="finlann-chips">
+                {["pix", "transfer", "cash"].map((id) => {
+                  const label = id === "pix" ? "Pix" : id === "transfer" ? "Transferência" : "Dinheiro";
+                  const active = extra === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      className={
+                        "finlann-chip " +
+                        (active ? "finlann-chip--solid is-active" : "finlann-chip--outline")
+                      }
+                      onClick={() => setExtra(id)}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </>
         ) : (
