@@ -6,6 +6,7 @@ import CardStatementModal from "../components/CardStatementModal.jsx";
 import IncomeModal from "../components/IncomeModal.jsx";
 import IncomeStatementModal from "../components/IncomeStatementModal.jsx";
 import MonthPickerModal from "../components/MonthPickerModal.jsx";
+import MonthPopover from "../components/MonthPopover.jsx";
 import Overlay from "../components/Overlay.jsx";
 import { getMonthlySummary } from "../data/finance.js";
 import logoFinlann from "../assets/FinlannLogo.png";
@@ -193,27 +194,19 @@ export default function Dashboard({
                   className="finlann-logo-img"
                 />
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <button
-                  type="button"
-                  className="finlann-header__subtitle finlann-header__subtitle--clickable"
-                  onClick={() => setShowMonthPicker(true)}
-                >
-                  {MONTH_LABELS[currentMonthIndex]} · {currentYear}
-                </button>
-                <button
-                  type="button"
-                  className="finlann-month-trigger"
-                  onClick={() => setShowMonthPicker((prev) => !prev)}
-                  aria-label="Selecionar mês e ano"
-                >
-                  <img
-                    src={calendarioIcon}
-                    alt="Selecionar mês e ano"
-                    className="finlann-month-trigger__icon"
-                  />
-                </button>
-              </div>
+              <button
+                type="button"
+                className="finlann-header__subtitle finlann-header__subtitle--clickable"
+                onClick={() => setShowMonthPicker((prev) => !prev)}
+                style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+              >
+                <span>{MONTH_LABELS[currentMonthIndex]} · {currentYear}</span>
+                <img
+                  src={calendarioIcon}
+                  alt="Selecionar mês e ano"
+                  className="finlann-month-trigger__icon"
+                />
+              </button>
             </div>
           </header>
         </div>
@@ -579,15 +572,20 @@ export default function Dashboard({
 
 
       {showMonthPicker && (
-        <MonthPickerModal
-          initialMonthIndex={currentMonthIndex}
-          initialYear={currentYear}
-          onClose={() => setShowMonthPicker(false)}
-          onConfirm={({ monthIndex, year }) => {
-            setCurrentMonthIndex(monthIndex);
-            setCurrentYear(year);
-          }}
-        />
+        <div
+          className="finlann-month-popover-overlay"
+          onClick={() => setShowMonthPicker(false)}
+        >
+          <MonthPopover
+            currentMonthIndex={currentMonthIndex}
+            currentYear={currentYear}
+            onChange={({ monthIndex, year }) => {
+              setCurrentMonthIndex(monthIndex);
+              setCurrentYear(year);
+            }}
+            onClose={() => setShowMonthPicker(false)}
+          />
+        </div>
       )}
 
       {showIncomeSummaryModal && (

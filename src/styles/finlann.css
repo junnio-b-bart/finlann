@@ -161,6 +161,7 @@
   height: 66px; /* ~50% maior */
   width: auto;
   display: block;
+  margin-top: 2px; /* ajusta alinhamento vertical com texto do mês/ano */
 }
 
 .finlann-header__chip {
@@ -815,8 +816,8 @@
 }
 
 .finlann-bottom-nav__icon {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   display: block;
   filter: grayscale(1) brightness(0.9) opacity(0.8);
 }
@@ -907,8 +908,8 @@
 .finlann-modal__close {
   border: none;
   border-radius: 999px;
-  width: 32px;
-  height: 32px;
+  width: 45px;
+  height: 45px;
   background: rgba(15, 23, 42, 0.9);
   color: var(--color-text-muted);
   font-size: 18px;
@@ -1234,8 +1235,8 @@
 }
 
 .finlann-toast__icon {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   display: block;
 }
 
@@ -1674,25 +1675,140 @@
 }
 
 .finlann-login-field__eye img {
-  width: 18px;
-  height: 18px;
+  width: 45px;
+  height: 45px;
 }
 
 
 .finlann-month-trigger {
   width: 32px;
   height: 32px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.5);
-  background: rgba(15, 23, 42, 0.8);
+  border: none;
+  background: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
 }
 
+
 .finlann-month-trigger__icon {
-  width: 18px;
-  height: 18px;
+  width: 35px;
+  height: 35px;
   display: block;
+}
+
+
+.finlann-month-popover-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+
+.finlann-month-popover {
+  position: absolute;
+  top: 140px; /* abaixo da linha do mês/ano */
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 220px;
+  padding: 10px 12px 12px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.7);
+}
+
+.finlann-month-popover__header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.finlann-month-popover__year {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+
+/* botão de ano anterior fica "grudado" à esquerda, sem empurrar o ano do centro */
+.finlann-month-popover__nav {
+  border: none;
+  background: transparent;
+  color: #e5e7eb;
+  font-size: 18px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.finlann-month-popover__year {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.finlann-month-popover__nav {
+  border: none;
+  background: transparent;
+  color: #e5e7eb;
+  font-size: 18px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.finlann-month-popover__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.finlann-month-popover__month {
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #e5e7eb;
+  font-size: var(--font-size-xs);
+  padding: 4px 8px;
+}
+
+.finlann-month-popover__month.is-active {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  color: #e0f2fe;
+}
+
+
+/* Responsividade vertical do gráfico de pizza: reduz tamanho abaixo de 900px de altura */
+@media (max-height: 900px) {
+  .finlann-fixed-summary__chart {
+    width: 180px;
+    height: 180px;
+  }
+}
+
+@media (max-height: 800px) {
+  .finlann-fixed-summary__chart {
+    width: 150px;
+    height: 150px;
+  }
+}
+
+@media (max-height: 700px) {
+  .finlann-fixed-summary__chart {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+@media (max-height: 650px) {
+  .finlann-fixed-summary__chart {
+    width: 100px;
+    height: 100px;
+  }
 }
