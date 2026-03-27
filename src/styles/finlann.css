@@ -377,8 +377,8 @@
 }
 
 .finlann-card-action__icon {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 
 .finlann-card-action__label {
@@ -908,8 +908,8 @@
 .finlann-modal__close {
   border: none;
   border-radius: 999px;
-  width: 45px;
-  height: 45px;
+  width: 16px;
+  height: 16px;
   background: rgba(15, 23, 42, 0.9);
   color: var(--color-text-muted);
   font-size: 18px;
@@ -1677,8 +1677,8 @@
 }
 
 .finlann-login-field__eye img {
-  width: 45px;
-  height: 45px;
+  width: 16px;
+  height: 16px;
 }
 
 
