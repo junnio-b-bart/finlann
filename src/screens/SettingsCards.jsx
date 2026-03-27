@@ -11,6 +11,7 @@ export default function SettingsCards({ financeState, onAddCard, onUpdateCard, o
   const cards = financeState.cards || [];
   const [expandedCardId, setExpandedCardId] = useState(null);
   const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [editingCard, setEditingCard] = useState(null);
 
   const { cardsWithUsage } = useMemo(() => {
     const allExpenses = financeState.expenses || [];
@@ -117,22 +118,37 @@ export default function SettingsCards({ financeState, onAddCard, onUpdateCard, o
                             <button
                               type="button"
                               className="finlann-modal__secondary finlann-card-action--edit"
+                              style={{ borderColor: "#ffffff", color: "#ffffff" }}
                               onClick={() => {
-                                alert("Em breve: edição completa do cartão a partir desta tela.");
+                                setEditingCard(card);
                               }}
                             >
-                              <img src={penIcon} alt="Editar" className="finlann-card-action__icon" />
-                              <span className="finlann-card-action__label">Editar</span>
+                              <img
+                                src={penIcon}
+                                alt="Editar"
+                                className="finlann-card-action__icon"
+                              />
+                              <span
+                                className="finlann-card-action__label"
+                                style={{ color: "#ffffff" }}
+                              >
+                                Editar
+                              </span>
                             </button>
                             <button
                               type="button"
                               className="finlann-modal__secondary finlann-card-action--delete"
                               onClick={() => {
-                                if (!window.confirm("Tem certeza que deseja remover este cartão?")) return;
+                                if (!window.confirm("Tem certeza que deseja remover este cartão?"))
+                                  return;
                                 onDeleteCard?.(card.id);
                               }}
                             >
-                              <img src={trashIcon} alt="Excluir" className="finlann-card-action__icon" />
+                              <img
+                                src={trashIcon}
+                                alt="Excluir"
+                                className="finlann-card-action__icon"
+                              />
                             </button>
                           </div>
                         </div>
@@ -180,6 +196,7 @@ export default function SettingsCards({ financeState, onAddCard, onUpdateCard, o
         + Adicionar cartão
       </button>
 
+      {/* Modal para criar novo cartão */}
       {showAddCardModal && (
         <CardModal
           onClose={() => setShowAddCardModal(false)}
@@ -188,6 +205,18 @@ export default function SettingsCards({ financeState, onAddCard, onUpdateCard, o
             setShowAddCardModal(false);
           }}
           initialKind="credit"
+        />
+      )}
+
+      {/* Modal para editar cartão existente */}
+      {editingCard && (
+        <CardModal
+          initialCard={editingCard}
+          onClose={() => setEditingCard(null)}
+          onSave={(updatedCard) => {
+            onUpdateCard?.(updatedCard);
+            setEditingCard(null);
+          }}
         />
       )}
     </div>

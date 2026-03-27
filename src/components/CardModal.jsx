@@ -82,9 +82,6 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
     <Overlay onClose={onClose} closeOnBackdrop={false} accentColor={effectiveColor}>
       <header className="finlann-modal__header finlann-card-modal__header">
         <div>
-          {isEditing && (
-            <p className="finlann-modal__eyebrow">Editar cartão</p>
-          )}
           <h2 className="finlann-modal__title">
             {isEditing ? "Editar cartão" : "Cadastrar novo cartão"}
           </h2>

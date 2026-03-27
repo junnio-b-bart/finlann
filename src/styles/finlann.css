@@ -364,7 +364,7 @@
 .finlann-card-action--delete {
   height: 30px;
   border-radius: 999px; /* pill mais alongada, menos "bolinha" */
-  padding: 0 10px;
+  padding: 0 14px; /* mais respiro lateral */
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1219,15 +1219,28 @@
   top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 8px 14px;
+  padding: 8px 18px;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.98);
-  border: 1px solid rgba(148, 163, 184, 0.8);
+  border: 1px solid rgba(34, 197, 94, 0.9); /* verde mais acentuado, como no banner de sync */
   color: #e5e7eb;
   font-size: var(--font-size-sm);
   box-shadow: var(--shadow-soft);
   z-index: 999;
   animation: finlann-toast-pop 2.4s ease-out forwards;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.finlann-toast__icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.finlann-toast__message {
+  white-space: nowrap;
 }
 
 /* Banner de sync em tempo real (notificação dentro do layout) */
@@ -1544,4 +1557,123 @@
 .finlann-settings-toggle-row small {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+
+
+
+/* também aplica o estado "ativo" quando o campo estiver focado */
+.finlann-login-field:focus-within {
+  border-color: #60a5fa;
+}
+
+.finlann-login-field:focus-within .finlann-login-field__label {
+  top: 4px;
+  font-size: 11px;
+  color: #bfdbfe;
+}
+
+
+/* Campo de login estilo Tailwind (peer-placeholder-shown) para USUÁRIO */
+.finlann-login-field {
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.finlann-login-field__input {
+  width: 100%;
+  max-width: 400px;
+  height: 46px; /* altura maior para mais conforto ao digitar */
+  border-radius: 12px;
+  border: 2px solid rgba(148, 163, 184, 0.7);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  padding: 0 10px;
+}
+
+.finlann-login-field__input::placeholder {
+  color: transparent; /* placeholder serve só para o estado "placeholder-shown" */
+}
+
+.finlann-login-field__input:focus {
+  outline: none;
+  border-color: #38bdf8; /* azul semelhante ao da referência */
+}
+
+.finlann-login-field__label {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--font-size-sm);
+  color: rgba(148, 163, 184, 0.9);
+  background: #020617; /* mesma cor do fundo do modal */
+  padding: 0 6px;       /* um pouco mais de espaço para não ser "cortado" pela borda */
+  pointer-events: none;
+  transition: all 140ms ease-out;
+}
+
+/* estado inicial: input vazio (placeholder visível) */
+.finlann-login-field__input:not(:focus):placeholder-shown + .finlann-login-field__label {
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--font-size-sm);
+  color: rgba(148, 163, 184, 0.7);
+}
+
+/* quando focado ou com conteúdo: label sobe para a borda */
+.finlann-login-field__input:focus + .finlann-login-field__label,
+.finlann-login-field__input:not(:placeholder-shown) + .finlann-login-field__label {
+  top: -2px;           /* desce mais 2px para alinhar melhor com a linha */
+  transform: none;
+  font-size: 12px;
+  color: #38bdf8;
+}
+
+
+/* transição suave para o texto "Senha" ao lado da checkbox */
+.finlann-password-label-text {
+  transition: opacity 120ms ease-out, transform 120ms ease-out;
+}
+
+.finlann-password-label-text--hidden {
+  opacity: 0;
+  transform: translateX(-4px);
+}
+
+.finlann-login-field__input--password {
+  max-width: 320px; /* mais estreito só para o campo de senha */
+}
+
+
+.finlann-login-field--with-eye {
+  position: relative;
+}
+
+.finlann-login-field__input--password {
+  max-width: 400px; /* volta a usar largura cheia, o olho entra dentro do campo */
+  padding-right: 40px; /* espaço interno pro botão de olho */
+}
+
+.finlann-login-field__eye {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  color: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.finlann-login-field__eye img {
+  width: 18px;
+  height: 18px;
 }

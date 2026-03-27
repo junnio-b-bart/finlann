@@ -84,15 +84,41 @@ export default function Dashboard({
     "#6b7280",
   ];
 
-  const [categoryColors, setCategoryColors] = useState({
-    alimentacao: "#22c55e",
-    carro: "#3b82f6",
-    lazer: "#f97316",
-    compras: "#a855f7",
-    investimentos: "#eab308",
-    casa: "#38bdf8",
-    saude: "#ef4444",
-    outros: "#6b7280",
+  const [categoryColors, setCategoryColors] = useState(() => {
+    if (typeof window === "undefined") return {
+      alimentacao: "#22c55e",
+      carro: "#3b82f6",
+      lazer: "#f97316",
+      compras: "#a855f7",
+      investimentos: "#eab308",
+      casa: "#38bdf8",
+      saude: "#ef4444",
+      outros: "#6b7280",
+    };
+    try {
+      const raw = window.localStorage.getItem("finlann.categoryColors");
+      return raw ? JSON.parse(raw) : {
+        alimentacao: "#22c55e",
+        carro: "#3b82f6",
+        lazer: "#f97316",
+        compras: "#a855f7",
+        investimentos: "#eab308",
+        casa: "#38bdf8",
+        saude: "#ef4444",
+        outros: "#6b7280",
+      };
+    } catch {
+      return {
+        alimentacao: "#22c55e",
+        carro: "#3b82f6",
+        lazer: "#f97316",
+        compras: "#a855f7",
+        investimentos: "#eab308",
+        casa: "#38bdf8",
+        saude: "#ef4444",
+        outros: "#6b7280",
+      };
+    }
   });
 
   // DEBUG TEMPORÁRIO: ajuda a entender por que o resumo de saídas está zerado
@@ -886,10 +912,18 @@ export default function Dashboard({
                                 }
                                 style={{ background: color }}
                                 onClick={() => {
-                                  setCategoryColors((prev) => ({
-                                    ...prev,
-                                    [categoryId]: color,
-                                  }));
+                                  setCategoryColors((prev) => {
+                                    const next = {
+                                      ...prev,
+                                      [categoryId]: color,
+                                    };
+                                    try {
+                                      if (typeof window !== "undefined") {
+                                        window.localStorage.setItem("finlann.categoryColors", JSON.stringify(next));
+                                      }
+                                    } catch {}
+                                    return next;
+                                  });
                                   setOpenColorCategory(null);
                                 }}
                               />
@@ -907,10 +941,18 @@ export default function Dashboard({
                                 value={categoryColors[categoryId] || "#64748b"}
                                 onChange={(e) => {
                                   const color = e.target.value;
-                                  setCategoryColors((prev) => ({
-                                    ...prev,
-                                    [categoryId]: color,
-                                  }));
+                                  setCategoryColors((prev) => {
+                                    const next = {
+                                      ...prev,
+                                      [categoryId]: color,
+                                    };
+                                    try {
+                                      if (typeof window !== "undefined") {
+                                        window.localStorage.setItem("finlann.categoryColors", JSON.stringify(next));
+                                      }
+                                    } catch {}
+                                    return next;
+                                  });
                                   // não fecha o seletor aqui, pra você poder arrastar
                                 }}
                               />
