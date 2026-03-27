@@ -9,6 +9,7 @@ import MonthPickerModal from "../components/MonthPickerModal.jsx";
 import Overlay from "../components/Overlay.jsx";
 import { getMonthlySummary } from "../data/finance.js";
 import logoFinlann from "../assets/FinlannLogo.png";
+import calendarioIcon from "../assets/icons/calendario.png";
 
 const MONTH_LABELS = [
   "Janeiro",
@@ -192,13 +193,27 @@ export default function Dashboard({
                   className="finlann-logo-img"
                 />
               </div>
-              <button
-                type="button"
-                className="finlann-header__subtitle finlann-header__subtitle--clickable"
-                onClick={() => setShowMonthPicker(true)}
-              >
-                {MONTH_LABELS[currentMonthIndex]} · {currentYear}
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  type="button"
+                  className="finlann-header__subtitle finlann-header__subtitle--clickable"
+                  onClick={() => setShowMonthPicker(true)}
+                >
+                  {MONTH_LABELS[currentMonthIndex]} · {currentYear}
+                </button>
+                <button
+                  type="button"
+                  className="finlann-month-trigger"
+                  onClick={() => setShowMonthPicker((prev) => !prev)}
+                  aria-label="Selecionar mês e ano"
+                >
+                  <img
+                    src={calendarioIcon}
+                    alt="Selecionar mês e ano"
+                    className="finlann-month-trigger__icon"
+                  />
+                </button>
+              </div>
             </div>
           </header>
         </div>
