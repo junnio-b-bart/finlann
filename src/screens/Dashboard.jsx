@@ -820,9 +820,13 @@ export default function Dashboard({
       )}
 
       {showFixedStatement && (
-        <Overlay onClose={() => setShowFixedStatement(false)} kind="expense">
+        <Overlay
+          onClose={() => setShowFixedStatement(false)}
+          kind="expense"
+          accentColor={categoryStatement?.color || undefined}
+        >
           <header className="finlann-modal__header" style={{ marginBottom: 10 }}>
-            <h2 className="finlann-modal__title">Resumo por categoria</h2>
+            <h2 className="finlann-modal__title">Saídas por categoria</h2>
           </header>
           <div className="finlann-modal__body finlann-modal__body--scroll">
             <div className="finlann-list">
@@ -869,7 +873,7 @@ export default function Dashboard({
                         key={categoryId}
                         className="finlann-list-item finlann-list-item--stacked"
                         role="button"
-                        onClick={() => setCategoryStatement({ id: categoryId, label })}
+                        onClick={() => setCategoryStatement({ id: categoryId, label, color: categoryColors[categoryId] })}
                       >
                         <div className="finlann-list-item__top-row">
                           <div className="finlann-list-item__left">
@@ -993,7 +997,15 @@ export default function Dashboard({
       )}
 
       {categoryStatement && (
-        <Overlay onClose={() => setCategoryStatement(null)} kind="expense">
+        <Overlay
+          onClose={() => {
+            setCategoryStatement(null);
+            setCategorySelectionMode(false);
+            setCategorySelectedIds([]);
+          }}
+          kind="expense"
+          accentColor={categoryStatement.color || undefined}
+        >
           <header className="finlann-modal__header">
             <p className="finlann-modal__eyebrow">Saídas por categoria</p>
             <h2 className="finlann-modal__title">{categoryStatement.label}</h2>
@@ -1135,7 +1147,11 @@ export default function Dashboard({
 
                   <button
                     type="button"
-                    className="finlann-modal__secondary"
+                    className={
+                      categorySelectedIds.length === 0
+                        ? "finlann-modal__secondary"
+                        : "finlann-modal__danger"
+                    }
                     disabled={categorySelectedIds.length === 0}
                     onClick={() => {
                       if (!categorySelectedIds.length) return;

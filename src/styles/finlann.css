@@ -868,7 +868,7 @@
 }
 
 .finlann-overlay__panel--expense {
-  border-color: #ef4444;
+  border-color: #38bdf8; /* azul para saídas por categoria */
 }
 
 .finlann-overlay__panel--income {
@@ -1857,3 +1857,14 @@
   box-shadow: none;
 }
 
+
+
+.finlann-modal__danger {
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  border: none;
+  background: linear-gradient(135deg, #b91c1c, #ef4444);
+  color: #fef2f2;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
