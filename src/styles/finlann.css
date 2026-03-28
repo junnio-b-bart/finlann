@@ -862,14 +862,12 @@
   border-radius: 24px;
   /* fundo mais sólido, sem deixar o conteúdo de trás "vazar" */
   background: rgba(2, 6, 23, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  border: 1px solid transparent;
   box-shadow: var(--shadow-soft);
   padding: 16px 16px 12px;
 }
 
-.finlann-overlay__panel--expense {
-  border-color: #38bdf8; /* azul para saídas por categoria */
-}
+
 
 .finlann-overlay__panel--income {
   border-color: #22c55e;
@@ -1867,4 +1865,10 @@
   color: #fef2f2;
   font-size: var(--font-size-sm);
   font-weight: 600;
+}
+
+
+.finlann-overlay__panel--expense,
+.finlann-overlay__panel--income {
+  border-color: var(--finlann-accent, rgba(148, 163, 184, 0.25));
 }

@@ -825,7 +825,7 @@ export default function Dashboard({
           kind="expense"
           accentColor={categoryStatement?.color || undefined}
         >
-          <header className="finlann-modal__header" style={{ marginBottom: 10 }}>
+          <header className="finlann-modal__header" style={{ marginBottom: 16 }}>
             <h2 className="finlann-modal__title">Saídas por categoria</h2>
           </header>
           <div className="finlann-modal__body finlann-modal__body--scroll">
