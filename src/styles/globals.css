@@ -42,6 +42,33 @@ body {
   scrollbar-width: none; /* Firefox: sem barra, mas com scroll */
   scrollbar-color: transparent transparent;
 }
+/* Estado visual de faturas no resumo de saídas (apenas borda + cor do valor) */
+.finlann-invoice--open {
+  border: 1px solid rgba(59, 130, 246, 0.9); /* azul */
+  border-radius: 10px;
+}
+
+.finlann-invoice--closed {
+  border: 1px solid rgba(250, 204, 21, 0.95); /* amarelo */
+  border-radius: 10px;
+}
+
+.finlann-invoice--overdue {
+  border: 1px solid rgba(239, 68, 68, 0.95); /* vermelho */
+  border-radius: 10px;
+}
+
+.finlann-list-item__value--open {
+  color: #f9fafb; /* branco */
+}
+
+.finlann-list-item__value--closed {
+  color: #facc15; /* amarelo */
+}
+
+.finlann-list-item__value--overdue {
+  color: #f87171; /* vermelho */
+}
 
 #root {
   width: 100%;
