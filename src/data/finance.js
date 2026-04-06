@@ -6,7 +6,33 @@ export function createInitialState() {
     cards: [], // cartões de crédito
     expenses: [], // saídas (inclui despesas de cartão, com ou sem parcelamento)
     incomes: [], // entradas
+    paidInvoices: [], // faturas quitadas: [{cardId, monthIndex, year}]
+    invoicePayments: [], // pagamentos de fatura registrados no fluxo de caixa
   };
+}
+
+// Marca uma fatura (cartão + mês/ano) como paga
+export function markInvoicePaid(state, cardId, monthIndex, year, paymentEntry = null) {
+  const prev = state.paidInvoices || [];
+  // evita duplicata
+  const alreadyPaid = prev.some(
+    (p) => p.cardId === cardId && p.monthIndex === monthIndex && p.year === year
+  );
+  if (alreadyPaid) return state;
+  return {
+    ...state,
+    paidInvoices: [...prev, { cardId, monthIndex, year }],
+    invoicePayments: paymentEntry
+      ? [...(state.invoicePayments || []), paymentEntry]
+      : state.invoicePayments || [],
+  };
+}
+
+// Verifica se uma fatura de cartão foi marcada como paga
+export function isInvoicePaid(state, cardId, monthIndex, year) {
+  return (state.paidInvoices || []).some(
+    (p) => p.cardId === cardId && p.monthIndex === monthIndex && p.year === year
+  );
 }
 
 // Helper opcional para simular um mês movimentado de teste (sem login)
@@ -274,6 +300,7 @@ function monthsBetween(fromMonthIndex, fromYear, toMonthIndex, toYear) {
 // e assim por diante.
 function getInvoiceSlotInfoForExpense(expense, card) {
   const closingDay = typeof card?.closingDay === "number" ? card.closingDay : null;
+  const dueDay = typeof card?.dueDay === "number" ? card.dueDay : null;
   const purchaseDate = new Date(expense.purchaseDate || expense.createdAt);
   const year = purchaseDate.getFullYear();
   const month = purchaseDate.getMonth(); // 0-11
@@ -290,6 +317,17 @@ function getInvoiceSlotInfoForExpense(expense, card) {
 
   // Se a compra foi após o fechamento daquele mês, a primeira fatura útil
   // será a do mês seguinte.
+  if (typeof dueDay === "number" && closingDay < dueDay) {
+    const referenceDate =
+      day > closingDay
+        ? new Date(year, month, 1)
+        : new Date(year, month - 1, 1);
+    return {
+      firstInvoiceMonthIndex: referenceDate.getMonth(),
+      firstInvoiceYear: referenceDate.getFullYear(),
+    };
+  }
+
   if (day > closingDay) {
     const firstInvoiceDate = new Date(year, month + 1, closingDay);
     return {
@@ -304,6 +342,10 @@ function getInvoiceSlotInfoForExpense(expense, card) {
     firstInvoiceMonthIndex: firstInvoiceDate.getMonth(),
     firstInvoiceYear: firstInvoiceDate.getFullYear(),
   };
+}
+
+export function getFirstInvoiceReferenceForExpense(expense, card) {
+  return getInvoiceSlotInfoForExpense(expense, card);
 }
 
 // Lógica única de fatura de cartão por mês/ano, baseada na mesma regra usada
@@ -358,6 +400,23 @@ export function computeCardInvoiceItemsForMonth(expenses, monthIndex, year) {
 export function getCardInvoiceForMonth(state, cardId, monthIndex, year) {
   const card = state.cards.find((c) => c.id === cardId) || null;
 
+  // Dia de fechamento efetivo para este cartão e para este mês/ano,
+  // considerando possível override da fatura atual.
+  let effectiveClosingDay = null;
+  if (card) {
+    if (
+      typeof card.currentInvoiceYear === "number" &&
+      typeof card.currentInvoiceMonthIndex === "number" &&
+      card.currentInvoiceYear === year &&
+      card.currentInvoiceMonthIndex === monthIndex &&
+      typeof card.currentInvoiceClosingDay === "number"
+    ) {
+      effectiveClosingDay = card.currentInvoiceClosingDay;
+    } else if (typeof card.closingDay === "number") {
+      effectiveClosingDay = card.closingDay;
+    }
+  }
+
   const expensesForCard = state.expenses.filter(
     (e) => e.method === "credit" && e.cardId === cardId
   );
@@ -369,7 +428,7 @@ export function getCardInvoiceForMonth(state, cardId, monthIndex, year) {
     const totalInstallments = e.totalInstallments || 1;
 
     // Se o cartão tiver dia de fechamento configurado, usamos janela de datas
-    if (card && typeof card.closingDay === "number") {
+    if (card && typeof effectiveClosingDay === "number") {
       // 1) Se a despesa já possui firstInvoiceMonthIndex/Year, usamos isso
       //    como ponto de partida para a primeira parcela (mais fiel ao demo
       //    e ao dado salvo).
@@ -383,7 +442,13 @@ export function getCardInvoiceForMonth(state, cardId, monthIndex, year) {
         firstInvoiceYear =
           e.firstInvoiceYear || new Date(e.purchaseDate || e.createdAt).getFullYear();
       } else {
-        const info = getInvoiceSlotInfoForExpense(e, card);
+        // Para a distribuição inicial das parcelas, usamos o mesmo cálculo de
+        // slot, porém com o dia de fechamento efetivo (override da fatura
+        // atual quando existir).
+        const info = getInvoiceSlotInfoForExpense(e, {
+          ...card,
+          closingDay: effectiveClosingDay,
+        });
         firstInvoiceMonthIndex = info.firstInvoiceMonthIndex;
         firstInvoiceYear = info.firstInvoiceYear;
       }
@@ -439,6 +504,67 @@ export function getCardInvoiceForMonth(state, cardId, monthIndex, year) {
   return { total, items };
 }
 
+export function getCardInvoiceItemsForMonth(state, cardId, monthIndex, year) {
+  return getCardInvoiceForMonth(state, cardId, monthIndex, year).items;
+}
+
+export function getCardInvoiceCycleDates(card, monthIndex, year) {
+  if (!card) {
+    return { closingDate: null, dueDate: null, closingDay: null, dueDay: null };
+  }
+
+  let closingDay = null;
+  if (
+    typeof card.currentInvoiceYear === "number" &&
+    typeof card.currentInvoiceMonthIndex === "number" &&
+    card.currentInvoiceYear === year &&
+    card.currentInvoiceMonthIndex === monthIndex &&
+    typeof card.currentInvoiceClosingDay === "number"
+  ) {
+    closingDay = card.currentInvoiceClosingDay;
+  } else if (typeof card.closingDay === "number") {
+    closingDay = card.closingDay;
+  }
+
+  const dueDay = typeof card.dueDay === "number" ? card.dueDay : null;
+  if (typeof closingDay !== "number") {
+    return { closingDate: null, dueDate: null, closingDay: null, dueDay };
+  }
+
+  const closesNextMonth = typeof dueDay === "number" && closingDay < dueDay;
+  const closingDate = closesNextMonth
+    ? new Date(year, monthIndex + 1, closingDay)
+    : new Date(year, monthIndex, closingDay);
+
+  let dueDate = null;
+  if (typeof dueDay === "number") {
+    dueDate = closesNextMonth
+      ? new Date(closingDate.getFullYear(), closingDate.getMonth(), dueDay)
+      : new Date(closingDate.getFullYear(), closingDate.getMonth() + 1, dueDay);
+  }
+
+  return { closingDate, dueDate, closingDay, dueDay };
+}
+
+export function createInvoicePaymentEntry(state, cardId, monthIndex, year, paidAt = new Date().toISOString()) {
+  const card = (state.cards || []).find((c) => c.id === cardId) || null;
+  const { total } = getCardInvoiceForMonth(state, cardId, monthIndex, year);
+  const amount = Number(total || 0);
+  if (amount <= 0) return null;
+
+  return {
+    id: `invoice-payment-${cardId}-${year}-${monthIndex}-${Date.now()}`,
+    cardId,
+    monthIndex,
+    year,
+    amount,
+    paidAt,
+    createdAt: paidAt,
+    description: `Pagamento fatura ${card?.label || "Cartão"}`,
+    method: "invoice_payment",
+  };
+}
+
 // Retorna, para um cartão e um mês/ano selecionados, as duas faturas relevantes
 // para o resumo do dashboard:
 // - previous: fatura imediatamente anterior (mês passado)
@@ -456,6 +582,17 @@ export function getCardDualInvoicesForMonth(state, cardId, monthIndex, year) {
   return { previous, current };
 }
 
+function toMoneyNumber(value) {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric)) return numeric;
+  if (typeof value === "string") {
+    const normalized = value.replace(/\./g, "").replace(",", ".");
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
 // Resumo mensal para o dashboard.
 //
 // Regras importantes:
@@ -470,13 +607,13 @@ export function getMonthlySummary(state, monthIndex, year) {
   );
 
   const totalIncomes = filteredIncomes.reduce(
-    (acc, i) => acc + Number(i.amount || 0),
+    (acc, i) => acc + toMoneyNumber(i.amount),
     0
   );
 
   const incomesByType = filteredIncomes.reduce((acc, i) => {
     const key = i.type || "outros";
-    const value = Number(i.amount || 0);
+    const value = toMoneyNumber(i.amount);
     acc[key] = (acc[key] || 0) + value;
     return acc;
   }, {});
@@ -486,6 +623,7 @@ export function getMonthlySummary(state, monthIndex, year) {
   const expensesByCard = {};
 
   for (const card of state.cards) {
+    if (isInvoicePaid(state, card.id, monthIndex, year)) continue;
     const { total } = getCardInvoiceForMonth(state, card.id, monthIndex, year);
     if (total > 0) {
       expensesByCard[card.id] = total;
@@ -502,12 +640,16 @@ export function getMonthlySummary(state, monthIndex, year) {
       // tudo que não for crédito em cartão, ou crédito sem cardId
       return e.method !== "credit" || !e.cardId;
     })
-    .reduce((acc, e) => acc + Number(e.amount || 0), 0);
+    .reduce((acc, e) => acc + toMoneyNumber(e.amount), 0);
+
+  const invoicePaymentsTotal = (state.invoicePayments || [])
+    .filter((payment) => isSameMonthYear(payment.paidAt || payment.createdAt, monthIndex, year))
+    .reduce((acc, payment) => acc + toMoneyNumber(payment.amount), 0);
 
   const totalExpenses = Object.values(expensesByCard).reduce(
     (acc, v) => acc + v,
     0
-  ) + extraExpensesTotal;
+  ) + extraExpensesTotal + invoicePaymentsTotal;
 
   // Dívida em aberto de cartão de crédito (independente do mês):
   // todas as despesas de cartão com cardId e que ainda não foram marcadas
@@ -515,7 +657,7 @@ export function getMonthlySummary(state, monthIndex, year) {
   // nos cartões, mesmo que parte disso pertença a faturas futuras.
   const openCreditDebt = state.expenses
     .filter((e) => e.method === "credit" && e.cardId && e.paid !== true)
-    .reduce((acc, e) => acc + Number(e.amount || 0), 0);
+    .reduce((acc, e) => acc + toMoneyNumber(e.amount), 0);
 
   // Parte da dívida de cartão que está em faturas em aberto (não pagas) e que
   // ainda não "virou" histórico fechado. Útil para somar no card de Saídas
@@ -528,10 +670,24 @@ export function getMonthlySummary(state, monthIndex, year) {
 
   if (isCurrentMonth) {
     for (const card of state.cards) {
-      if (typeof card.closingDay !== "number") continue;
+      // Considera override de fatura atual (se existir) para o mês/ano de hoje
+      let effectiveClosingDay = null;
+      if (
+        typeof card.currentInvoiceYear === "number" &&
+        typeof card.currentInvoiceMonthIndex === "number" &&
+        card.currentInvoiceYear === today.getFullYear() &&
+        card.currentInvoiceMonthIndex === today.getMonth() &&
+        typeof card.currentInvoiceClosingDay === "number"
+      ) {
+        effectiveClosingDay = card.currentInvoiceClosingDay;
+      } else if (typeof card.closingDay === "number") {
+        effectiveClosingDay = card.closingDay;
+      }
+
+      if (typeof effectiveClosingDay !== "number") continue;
 
       // Consideramos "em aberto" enquanto não passou do dia de fechamento
-      if (today.getDate() > card.closingDay) continue;
+      if (today.getDate() > effectiveClosingDay) continue;
 
       // Soma apenas despesas deste cartão que ainda não foram marcadas como pagas
       const openForCard = state.expenses
@@ -541,7 +697,7 @@ export function getMonthlySummary(state, monthIndex, year) {
             e.cardId === card.id &&
             e.paid !== true
         )
-        .reduce((acc, e) => acc + Number(e.amount || 0), 0);
+        .reduce((acc, e) => acc + toMoneyNumber(e.amount), 0);
 
       cardOpenInvoicesTotal += openForCard;
     }
@@ -554,20 +710,13 @@ export function getMonthlySummary(state, monthIndex, year) {
   // lógica de fatura do mês (por competência da fatura).
 
   // 1) Saídas em cartão (competência de fatura)
-  for (const card of state.cards) {
-    const cardExpenses = state.expenses.filter(
-      (e) => e.method === "credit" && e.cardId === card.id
-    );
-
-    const { items } = computeCardInvoiceItemsForMonth(
-      cardExpenses,
-      monthIndex,
-      year
-    );
+  for (const card of []) {
+    if (isInvoicePaid(state, card.id, monthIndex, year)) continue;
+    const items = getCardInvoiceItemsForMonth(state, card.id, monthIndex, year);
 
     for (const e of items) {
       const categoryKey = e.category || "outros";
-      const value = Number(e.installmentAmount || 0);
+      const value = toMoneyNumber(e.installmentAmount);
       expensesByCategory[categoryKey] =
         (expensesByCategory[categoryKey] || 0) + value;
     }
@@ -575,13 +724,11 @@ export function getMonthlySummary(state, monthIndex, year) {
 
   // 2) Saídas à vista (pix, débito, dinheiro, crédito sem cardId)
   for (const e of state.expenses) {
-    if (e.method === "credit" && e.cardId) continue; // já tratadas acima
-
     const createdAt = e.purchaseDate || e.createdAt;
     if (!isSameMonthYear(createdAt, monthIndex, year)) continue;
 
     const categoryKey = e.category || "outros";
-    const value = Number(e.amount || 0);
+    const value = toMoneyNumber(e.amount);
     expensesByCategory[categoryKey] =
       (expensesByCategory[categoryKey] || 0) + value;
   }

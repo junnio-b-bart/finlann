@@ -2,88 +2,108 @@ import { useState } from "react";
 import Overlay from "./Overlay.jsx";
 import { formatCurrencyInput, parseCurrencyInput } from "../utils/currency.js";
 
-function formatAmountDisplay(value) {
-  return value.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-}
+const expenseMethods = [
+  { id: "credit", label: "Credito" },
+  { id: "debit", label: "Debito" },
+  { id: "pix", label: "Pix" },
+  { id: "cash", label: "Dinheiro" },
+];
 
+const incomeTypes = [
+  { id: "pix", label: "Pix" },
+  { id: "salary", label: "Salario" },
+  { id: "freela", label: "Freela" },
+  { id: "transfer", label: "Transferencia" },
+  { id: "cash", label: "Dinheiro" },
+];
 
-export default function HistoryEditEntryModal({ entry, onClose, onSave, existingCards }) {
+const expenseCategories = [
+  { id: "alimentacao", label: "Alimentacao" },
+  { id: "carro", label: "Carro" },
+  { id: "lazer", label: "Lazer" },
+  { id: "compras", label: "Compras" },
+  { id: "investimentos", label: "Investimentos" },
+  { id: "casa", label: "Casa" },
+  { id: "saude", label: "Saude" },
+  { id: "outros", label: "Outros" },
+];
+
+export default function HistoryEditEntryModal({
+  entry,
+  existingCards = [],
+  onClose,
+  onSave,
+}) {
   if (!entry) return null;
 
   const isIncome = entry.kind === "income";
 
   const [description, setDescription] = useState(entry.description || "");
-  const [amountText, setAmountText] = useState(
-    formatAmountDisplay(entry.amount)
+  const [amount, setAmount] = useState(
+    Number(entry.amount || 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    })
   );
-  const [hasTypedDescription, setHasTypedDescription] = useState(false);
-  const [hasTypedAmount, setHasTypedAmount] = useState(false);
   const [origin, setOrigin] = useState(entry.origin || "");
-  const [extra, setExtra] = useState(entry.extra || "");
-  const [method, setMethod] = useState(
-    entry.kind === "expense" ? entry.origin || entry.method || "" : ""
-  );
-  const [cardId, setCardId] = useState(
-    entry.kind === "expense" ? entry.extra || entry.cardId || "" : ""
-  );
+  const [incomeType, setIncomeType] = useState(entry.extra || "pix");
+  const [method, setMethod] = useState(entry.origin || "pix");
+  const [cardId, setCardId] = useState(entry.cardId || "");
+  const [category, setCategory] = useState(entry.category || "outros");
   const [note, setNote] = useState(entry.note || "");
 
-  const hasAnyTyping = hasTypedDescription || hasTypedAmount;
+  const canSave = description.trim().length > 0 && parseCurrencyInput(amount) > 0;
+  const creditCards = (existingCards || []).filter((c) => !c.kind || c.kind === "credit");
+  const debitCards = (existingCards || []).filter((c) => c.kind === "debit");
 
   function handleSave() {
-    const numericAmount = parseCurrencyInput(amountText);
-    if (!numericAmount) return;
+    if (!canSave) return;
+    const numericAmount = parseCurrencyInput(amount);
 
-    if (!isIncome && !method) return;
+    if (isIncome) {
+      onSave?.({
+        ...entry,
+        description: description.trim(),
+        amount: numericAmount,
+        origin: origin.trim(),
+        extra: incomeType,
+        note: note.trim(),
+      });
+      return;
+    }
 
     onSave?.({
       ...entry,
       description: description.trim(),
-      origin: isIncome ? origin.trim() : method,
-      extra: isIncome ? extra.trim() : cardId || "",
       amount: numericAmount,
-      method: !isIncome ? method : undefined,
-      cardId: !isIncome ? (method === "credit" ? cardId || null : null) : undefined,
-      note: note.trim() || undefined,
+      method,
+      origin: method,
+      cardId: method === "credit" || method === "debit" ? cardId || null : null,
+      category,
+      note: note.trim(),
     });
   }
 
-  const kindLabel = isIncome ? "Entrada" : "Saída";
-
-  const selectedCard = !isIncome
-    ? existingCards?.find((c) => c.id === cardId)
-    : null;
-  const accentColor = selectedCard?.color;
+  const visibleCards = method === "debit" ? debitCards : creditCards;
 
   return (
-    <Overlay
-      onClose={onClose}
-      kind={isIncome ? "income" : "expense"}
-      accentColor={accentColor}
-      closeOnBackdrop={!hasAnyTyping}
-    >
+    <Overlay onClose={onClose} kind={isIncome ? "income" : "expense"}>
       <header className="finlann-modal__header">
         <div>
-          <p className="finlann-modal__eyebrow">Editar {kindLabel}</p>
-          <h2 className="finlann-modal__title">{description || kindLabel}</h2>
+          <p className="finlann-modal__eyebrow">Edicao</p>
+          <h2 className="finlann-modal__title">
+            {isIncome ? "Editar entrada" : "Editar saida"}
+          </h2>
         </div>
       </header>
 
-      <div className="finlann-modal__body">
+      <div className="finlann-modal__body finlann-modal__body--scroll">
         <div className="finlann-field">
-          <label className="finlann-field__label">Descrição</label>
+          <label className="finlann-field__label">Descricao</label>
           <input
             className="finlann-field__input"
             value={description}
-            onChange={(e) => {
-              if (!hasTypedDescription && e.target.value !== entry.description) {
-                setHasTypedDescription(true);
-              }
-              setDescription(e.target.value);
-            }}
+            onChange={(e) => setDescription(e.target.value)}
           />
         </div>
 
@@ -91,22 +111,35 @@ export default function HistoryEditEntryModal({ entry, onClose, onSave, existing
           <label className="finlann-field__label">Valor</label>
           <input
             className="finlann-field__input finlann-field__input--amount"
-            placeholder="R$ 0,00"
             inputMode="decimal"
-            value={amountText}
-            onChange={(e) => {
-              const raw = e.target.value;
-              if (!hasTypedAmount && raw !== "") {
-                setHasTypedAmount(true);
-              }
-              const formatted = formatCurrencyInput(raw);
-              setAmountText(formatted);
-            }}
+            value={amount}
+            onChange={(e) => setAmount(formatCurrencyInput(e.target.value))}
           />
         </div>
 
         {isIncome ? (
           <>
+            <div className="finlann-field">
+              <label className="finlann-field__label">Tipo</label>
+              <div className="finlann-chips">
+                {incomeTypes.map((type) => (
+                  <button
+                    key={type.id}
+                    type="button"
+                    className={
+                      "finlann-chip " +
+                      (incomeType === type.id
+                        ? "finlann-chip--solid is-active"
+                        : "finlann-chip--outline")
+                    }
+                    onClick={() => setIncomeType(type.id)}
+                  >
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="finlann-field">
               <label className="finlann-field__label">Origem</label>
               <input
@@ -115,74 +148,40 @@ export default function HistoryEditEntryModal({ entry, onClose, onSave, existing
                 onChange={(e) => setOrigin(e.target.value)}
               />
             </div>
-
-            <div className="finlann-field">
-              <label className="finlann-field__label">Tipo</label>
-              <div className="finlann-chips">
-                {["pix", "transfer", "cash"].map((id) => {
-                  const label = id === "pix" ? "Pix" : id === "transfer" ? "Transferência" : "Dinheiro";
-                  const active = extra === id;
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      className={
-                        "finlann-chip " +
-                        (active ? "finlann-chip--solid is-active" : "finlann-chip--outline")
-                      }
-                      onClick={() => setExtra(id)}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </>
         ) : (
           <>
             <div className="finlann-field">
-              <label className="finlann-field__label">Forma de pagamento</label>
+              <label className="finlann-field__label">Metodo</label>
               <div className="finlann-chips">
-                {[
-                  { id: "credit", label: "Crédito" },
-                  { id: "debit", label: "Débito" },
-                  { id: "pix", label: "Pix" },
-                  { id: "cash", label: "Dinheiro" },
-                ].map((type) => {
-                  const active = type.id === method;
-                  const useAccent = active && type.id === "credit" && accentColor;
-                  return (
-                    <button
-                      key={type.id}
-                      type="button"
-                      className={
-                        "finlann-chip " +
-                        (active
-                          ? "finlann-chip--solid is-active" +
-                            (useAccent ? " finlann-chip--accent" : "")
-                          : "finlann-chip--outline")
-                      }
-                      onClick={() => setMethod(type.id)}
-                    >
-                      {type.label}
-                    </button>
-                  );
-                })}
+                {expenseMethods.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    className={
+                      "finlann-chip " +
+                      (method === m.id
+                        ? "finlann-chip--solid is-active"
+                        : "finlann-chip--outline")
+                    }
+                    onClick={() => setMethod(m.id)}
+                  >
+                    {m.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {method === "credit" && (
+            {(method === "credit" || method === "debit") && (
               <div className="finlann-field">
-                <label className="finlann-field__label">Cartão de crédito</label>
+                <label className="finlann-field__label">Cartao</label>
                 <div className="finlann-select">
                   <select
-                    className="finlann-field__input"
                     value={cardId}
                     onChange={(e) => setCardId(e.target.value)}
                   >
-                    <option value="">Selecione um cartão</option>
-                    {existingCards?.map((card) => (
+                    <option value="">Selecione</option>
+                    {visibleCards.map((card) => (
                       <option key={card.id} value={card.id}>
                         {card.label}
                       </option>
@@ -193,35 +192,51 @@ export default function HistoryEditEntryModal({ entry, onClose, onSave, existing
             )}
 
             <div className="finlann-field">
-              <label className="finlann-field__label">Observações</label>
-              <textarea
-                className="finlann-field__input"
-                rows={2}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
+              <label className="finlann-field__label">Categoria</label>
+              <div className="finlann-chips">
+                {expenseCategories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    className={
+                      "finlann-chip " +
+                      (category === cat.id
+                        ? "finlann-chip--solid is-active"
+                        : "finlann-chip--outline")
+                    }
+                    onClick={() => setCategory(cat.id)}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </>
         )}
 
-        {isIncome && (
-          <div className="finlann-field">
-            <label className="finlann-field__label">Observações</label>
-            <textarea
-              className="finlann-field__input"
-              rows={2}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </div>
-        )}
+        <div className="finlann-field">
+          <label className="finlann-field__label">Detalhe</label>
+          <input
+            className="finlann-field__input"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </div>
       </div>
 
-      <footer className="finlann-modal__footer" style={{ justifyContent: "flex-end" }}>
+      <footer className="finlann-modal__footer">
         <button
           type="button"
-          className="finlann-modal__primary"
+          className="finlann-modal__secondary"
+          onClick={onClose}
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          className={canSave ? "finlann-modal__primary" : "finlann-modal__secondary"}
           onClick={handleSave}
+          disabled={!canSave}
         >
           Salvar
         </button>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import Overlay from "./Overlay.jsx";
 import CardModal from "./CardModal.jsx";
 import ExpenseModal from "./ExpenseModal.jsx";
+import { getCardInvoiceCycleDates, getCardInvoiceForMonth } from "../data/finance.js";
 
 function formatCurrency(value) {
   return value.toLocaleString("pt-BR", {
@@ -41,6 +42,8 @@ export default function CardStatementModal({
   onRemoveExpenses,
   onTransferExpenses,
   onUpdateExpenses,
+  onPayInvoice,
+  paidInvoices,
 }) {
   const [showEditCard, setShowEditCard] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -49,6 +52,12 @@ export default function CardStatementModal({
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferTargetId, setTransferTargetId] = useState("");
   const [editingExpense, setEditingExpense] = useState(null);
+  const [showPayConfirm, setShowPayConfirm] = useState(false);
+
+  // Verifica se esta fatura já foi marcada como paga
+  const isThisInvoicePaid = (paidInvoices || []).some(
+    (p) => p.cardId === card.id && p.monthIndex === currentMonthIndex && p.year === currentYear
+  );
 
   const toggleSelected = (id) => {
     setSelectedIds((prev) =>
@@ -65,14 +74,13 @@ export default function CardStatementModal({
   const monthFormatter = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" });
   const invoiceDate = new Date(currentYear, currentMonthIndex, 1);
   const invoiceLabel = monthFormatter.format(invoiceDate);
-  const invoiceMonthNumber = String(currentMonthIndex + 1).padStart(2, "0");
   const selectionIcon = selectionMode ? "☑" : "☐"; // caixinha marcada/vazia
 
   // Reconstrói a lógica de fatura para este cartão e mês/ano
-  const invoiceItems = [];
-  let total = 0;
+  const _legacyInvoiceItems = [];
+  let _legacyTotal = 0;
 
-  function monthsBetween(fromMonthIndex, fromYear, toMonthIndex, toYear) {
+  function _monthsBetween(fromMonthIndex, fromYear, toMonthIndex, toYear) {
     return (toYear - fromYear) * 12 + (toMonthIndex - fromMonthIndex);
   }
 
@@ -86,22 +94,33 @@ export default function CardStatementModal({
         : refDate.getMonth();
     const firstYear = e.firstInvoiceYear || refDate.getFullYear();
 
-    const diff = monthsBetween(firstMonth, firstYear, currentMonthIndex, currentYear);
+    const diff = _monthsBetween(firstMonth, firstYear, currentMonthIndex, currentYear);
     if (diff < 0 || diff >= totalInstallments) continue; // não entra nesta fatura
 
     const installmentNumber = totalInstallments === 1 ? 1 : diff + 1;
     const installmentAmount =
       totalInstallments === 1 ? e.amount : e.amount / totalInstallments;
 
-    total += installmentAmount;
+    _legacyTotal += installmentAmount;
 
-    invoiceItems.push({
+    _legacyInvoiceItems.push({
       ...e,
       installmentNumber,
       totalInstallments,
       installmentAmount,
     });
   }
+
+  const invoiceState = { cards: allCards || [], expenses, paidInvoices: paidInvoices || [] };
+  const { items: invoiceItems, total } = getCardInvoiceForMonth(
+    invoiceState,
+    card.id,
+    currentMonthIndex,
+    currentYear
+  );
+  const { closingDate, dueDate } = getCardInvoiceCycleDates(card, currentMonthIndex, currentYear);
+  const closingLabel = closingDate ? formatDate(closingDate.toISOString()) : "â€“";
+  const dueLabel = dueDate ? formatDate(dueDate.toISOString()) : "â€“";
 
   return (
     <>
@@ -121,9 +140,11 @@ export default function CardStatementModal({
             </p>
             <button
               type="button"
-              className="finlann-modal__close"
-              onClick={onClose}
-              aria-label="Fechar fatura"
+              className="finlann-modal__close finlann-statement-icon-btn finlann-statement-icon-btn--gear"
+              onClick={() => setShowEditCard(true)}
+              aria-label="Editar cartÃ£o"
+              data-label={isThisInvoicePaid ? "✓ Paga" : "✓ Pagar fatura"}
+              disabled={false}
             >
               ×
             </button>
@@ -153,8 +174,11 @@ export default function CardStatementModal({
               marginTop: 2,
             }}
           >
+            <p className="finlann-field__label" style={{ margin: 0, display: "none" }}>
+              Datas do ciclo
+            </p>
             <p className="finlann-field__label" style={{ margin: 0 }}>
-              Fecha dia {card.billingCloseDay || "–"}/{invoiceMonthNumber} · Vence dia {card.billingDueDay || "–"}/{invoiceMonthNumber}
+              Fecha dia {closingLabel} · Vence dia {dueLabel}
             </p>
           </div>
         </header>
@@ -164,7 +188,8 @@ export default function CardStatementModal({
             {/* espaço reservado, mas sem conteúdo extra aqui agora */}
           </div>
 
-          <div className="finlann-statement-table finlann-statement-table--card">
+          <div className="finlann-statement-scroll">
+            <div className="finlann-statement-table finlann-statement-table--card">
             <div className="finlann-statement-row finlann-statement-row--header">
               <span>Data</span>
               <span>Descrição</span>
@@ -223,6 +248,7 @@ export default function CardStatementModal({
                 </div>
               );
             })}
+            </div>
           </div>
         </div>
 
@@ -231,21 +257,33 @@ export default function CardStatementModal({
           <div style={{ display: "flex", gap: 6 }}>
             <button
               type="button"
-              className="finlann-modal__close"
+              className="finlann-modal__close finlann-statement-icon-btn"
               onClick={() => setSelectionMode((prev) => !prev)}
               aria-label={selectionMode ? "Sair do modo seleção" : "Selecionar lançamentos"}
             >
               {selectionIcon}
             </button>
             {!selectionMode && (
-              <button
-                type="button"
-                className="finlann-card-add"
-                onClick={() => setShowAddExpense(true)}
-                aria-label="Adicionar compra nesta fatura"
-              >
-                +
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="finlann-statement-add-row-btn"
+                  onClick={() => setShowAddExpense(true)}
+                  aria-label="Adicionar item nesta fatura"
+                >
+                  + Adicionar item
+                </button>
+                {invoiceItems.length > 0 && !isThisInvoicePaid && onPayInvoice && (
+                  <button
+                    type="button"
+                    className="finlann-statement-add-row-btn finlann-statement-add-row-btn--pay"
+                    onClick={() => setShowPayConfirm(true)}
+                    aria-label="Marcar fatura como paga"
+                  >
+                    Pagar fatura
+                  </button>
+                )}
+              </>
             )}
           </div>
 
@@ -318,20 +356,83 @@ export default function CardStatementModal({
               </div>
             )}
 
-            {/* Engrenagem para editar cartão (só fora do modo seleção) */}
-            {!selectionMode && (
-              <button
-                type="button"
-                className="finlann-modal__close"
-                onClick={() => setShowEditCard(true)}
-                aria-label="Editar cartão"
-              >
-                ⚙
-              </button>
+            {/* Botão de pagar fatura + engrenagem (fora do modo seleção) */}
+            {false && (
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                {/* Pagar fatura: só aparece quando há itens e a fatura não foi paga */}
+                {false && invoiceItems.length > 0 && !isThisInvoicePaid && onPayInvoice && (
+                  <button
+                    type="button"
+                    className="finlann-modal__secondary finlann-statement-pay-btn"
+                    onClick={() => setShowPayConfirm(true)}
+                    aria-label="Marcar fatura como paga"
+                  >
+                    ✓ Pagar fatura
+                  </button>
+                )}
+                {false && isThisInvoicePaid && (
+                  <span className="finlann-statement-paid-label">
+                    ✓ Paga
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="finlann-modal__close finlann-statement-icon-btn finlann-statement-icon-btn--gear"
+                  onClick={() => setShowEditCard(true)}
+                  aria-label="Editar cartão"
+                >
+                  ⚙
+                </button>
+              </div>
             )}
           </div>
         </footer>
       </Overlay>
+
+      {/* Modal de confirmação: pagar fatura */}
+      {showPayConfirm && (
+        <div className="finlann-overlay">
+          <div className="finlann-overlay__panel">
+            <header className="finlann-modal__header">
+              <p className="finlann-modal__eyebrow">Fatura do cartão</p>
+              <h2 className="finlann-modal__title">Marcar como paga?</h2>
+            </header>
+            <div className="finlann-modal__body">
+              <p style={{ fontSize: 14, color: "#cbd5e1", lineHeight: 1.6 }}>
+                A fatura de <strong>{card.label}</strong> com total de{" "}
+                <strong>R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong> será marcada como paga e
+                desaparecerá do resumo de saídas.
+              </p>
+              <p style={{ fontSize: 13, color: "#94a3b8", marginTop: 8 }}>
+                Os lançamentos continuam no histórico para consulta.
+              </p>
+            </div>
+            <div className="finlann-settings-actions" style={{ marginTop: 8 }}>
+              <div className="finlann-settings-actions-row">
+                <button
+                  type="button"
+                  className="finlann-chip finlann-chip--outline"
+                  onClick={() => setShowPayConfirm(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="finlann-chip finlann-chip--solid"
+                  style={{ background: "#16a34a", borderColor: "#16a34a" }}
+                  onClick={() => {
+                    onPayInvoice?.(card.id, currentMonthIndex, currentYear);
+                    setShowPayConfirm(false);
+                    onClose?.();
+                  }}
+                >
+                  Confirmar pagamento
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showEditCard && (
         <CardModal

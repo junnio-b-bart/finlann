@@ -139,7 +139,7 @@
   border: none;
   margin-top: 2px;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: #e5e7eb;
   cursor: pointer;
 }
@@ -337,7 +337,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid rgba(248, 250, 252, 0.85);
   background: rgba(15, 23, 42, 0.4);
   color: #f9fafb;
@@ -364,7 +364,7 @@
 .finlann-card-action--edit,
 .finlann-card-action--delete {
   height: 30px;
-  border-radius: 999px; /* pill mais alongada, menos "bolinha" */
+  border-radius: var(--radius-pill);
   padding: 0 14px; /* mais respiro lateral */
   display: inline-flex;
   align-items: center;
@@ -484,7 +484,7 @@
 .finlann-card-full__nav button {
   width: 28px;
   height: 28px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: none;
   background: rgba(15, 23, 42, 0.3);
   color: #e5e7eb;
@@ -777,7 +777,7 @@
 
 .finlann-bottom-nav__item {
   flex: 1;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: none;
   padding: 6px 12px; /* um pouco mais largo para o seletor acompanhar melhor */
   background: transparent;
@@ -847,24 +847,43 @@
 .finlann-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.85);
+  /* glass: desfoca TUDO que está atrás, incluindo logo e chips do topo */
+  background: rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(18px) saturate(0.8);
+  -webkit-backdrop-filter: blur(18px) saturate(0.8);
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 16px;
   z-index: 40;
+  /* entrada suave */
+  animation: overlayFadeIn 0.18s ease forwards;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); }
+  to   { opacity: 1; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 }
 
 .finlann-overlay__panel {
   width: 100%;
   max-width: 480px;
-  max-height: calc(100dvh - 40px); /* nunca passa da tela, com margem em cima/baixo no mobile também */
+  max-height: calc(100dvh - 40px);
   border-radius: 24px;
-  /* fundo mais sólido, sem deixar o conteúdo de trás "vazar" */
-  background: rgba(2, 6, 23, 0.9);
-  border: 1px solid transparent;
-  box-shadow: var(--shadow-soft);
-  padding: 16px 16px 12px;
+  /* glass panel: semi-transparente com blur próprio */
+  background: rgba(8, 14, 36, 0.82);
+  backdrop-filter: blur(28px) saturate(1.2);
+  -webkit-backdrop-filter: blur(28px) saturate(1.2);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.04) inset;
+  padding: 20px 18px 14px;
+  /* slide suave pra cima ao abrir */
+  animation: panelSlideIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes panelSlideIn {
+  from { transform: translateY(12px) scale(0.98); opacity: 0; }
+  to   { transform: translateY(0)    scale(1);    opacity: 1; }
 }
 
 
@@ -905,7 +924,7 @@
 
 .finlann-modal__close {
   border: none;
-  border-radius: 999px;
+  border-radius: 12px;
   width: 16px;
   height: 16px;
   background: rgba(15, 23, 42, 0.9);
@@ -963,7 +982,7 @@
   width: 100%;
   padding: 0 12px;
   height: 32px; /* IMPORTANT: bate com ITEM_HEIGHT no JS pra wheel travar certinho */
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: none;
   background: transparent;
   color: rgba(148, 163, 184, 0.4);
@@ -986,7 +1005,7 @@
   font-weight: 600;
   font-size: var(--font-size-md); /* um pouco maior que o resto */
   transform: scale(1.02); /* menos esticado pra manter o texto bem centralizado */
-  border-radius: 999px; /* bem redondinho, borda suave */
+  border-radius: var(--radius-pill);
 }
 
 .finlann-field {
@@ -1099,7 +1118,7 @@
 .finlann-card-add {
   width: 32px;
   height: 32px;
-  border-radius: 999px;
+  border-radius: 12px;
   border: none;
   background: rgba(15, 23, 42, 0.95);
   color: #e5e7eb;
@@ -1115,10 +1134,13 @@
 
 /* botão grande "+ Adicionar cartão" na aba de cartões */
 .finlann-card-add-full {
-  margin-top: 12px;
-  width: 100%;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 96px; /* fica claramente acima da bottom nav */
+  width: min(92vw, 920px);
   padding: 10px 12px;
-  border-radius: 999px;
+  border-radius: 14px;
   border: none;
   background: linear-gradient(135deg, #16a34a, #22c55e);
   color: #ecfdf5;
@@ -1127,6 +1149,126 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 26;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.35);
+}
+
+.finlann-statement-icon-btn {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.finlann-statement-icon-btn--close {
+  font-size: var(--font-size-xs);
+}
+
+.finlann-statement-icon-btn--gear {
+  width: 35px;
+  height: 35px;
+  min-height: 35px;
+  font-size: var(--font-size-sm);
+  position: relative;
+  overflow: hidden;
+  text-indent: -9999px;
+}
+
+.finlann-statement-icon-btn--gear::before {
+  content: "⚙";
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-indent: 0;
+  font-size: var(--font-size-sm);
+}
+
+.finlann-statement-add-row-btn {
+  border: 1px solid rgba(34, 197, 94, 0.85);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.28), rgba(34, 197, 94, 0.34));
+  color: #bbf7d0;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.finlann-statement-add-row-btn:hover {
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.38), rgba(34, 197, 94, 0.46));
+  color: #dcfce7;
+}
+
+.finlann-statement-add-row-btn--pay {
+  border-color: rgba(148, 163, 184, 0.65);
+  background: rgba(15, 23, 42, 0.72);
+  color: #e5e7eb;
+}
+
+.finlann-statement-add-row-btn--pay:hover {
+  background: rgba(30, 41, 59, 0.86);
+  color: #f8fafc;
+}
+
+.finlann-statement-pay-btn {
+  border-color: rgba(34, 197, 94, 0.85);
+  color: #86efac;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 14px;
+}
+
+.finlann-statement-pay-btn--header {
+  height: 30px;
+  min-height: 30px;
+  min-width: 136px;
+  justify-content: center;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  text-indent: -9999px; /* esconde o texto legado do botão (incluindo 'x') */
+}
+
+.finlann-statement-pay-btn--header::before {
+  content: "✓ Pagar fatura";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  color: #86efac;
+  white-space: nowrap;
+  text-indent: 0;
+}
+
+.finlann-statement-pay-btn--header:disabled {
+  opacity: 0.55;
+}
+
+/* mantém o label limpo e em uma linha, sem caracteres residuais */
+.finlann-statement-pay-btn--header::before {
+  content: "Pagar fatura";
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.finlann-statement-paid-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #86efac;
+  opacity: 0.9;
 }
 
 .finlann-conditional {
@@ -1174,33 +1316,111 @@
   cursor: pointer;
 }
 
+/* ── Footer padrão de modal ─────────────────────────────── */
 .finlann-modal__footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  margin-top: 4px;
 }
 
+/* footer com dois botões um ao lado do outro (cancelar + confirmar) */
+.finlann-modal__footer--split {
+  justify-content: space-between;
+}
+
+.finlann-dialog__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Botões padronizados de modal ────────────────────────── */
 .finlann-modal__secondary {
   border-radius: var(--radius-pill);
-  padding: 8px 14px;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  background: transparent;
-  color: var(--color-text-muted);
+  padding: 9px 16px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.5);
+  color: #cbd5e1;
   font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.finlann-modal__secondary:hover:not(:disabled) {
+  border-color: rgba(148, 163, 184, 0.6);
+  background: rgba(30, 41, 59, 0.6);
+}
+
+.finlann-modal__secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .finlann-modal__primary {
   border-radius: var(--radius-pill);
-  padding: 8px 16px;
+  padding: 9px 18px;
   border: none;
   background: linear-gradient(135deg, #2563eb, #4f46e5);
-  color: #e5e7eb;
+  color: #fff;
   font-size: var(--font-size-sm);
   font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.finlann-modal__primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.finlann-modal__primary:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.finlann-modal__primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .finlann-modal__primary--success {
   background: linear-gradient(135deg, #16a34a, #22c55e);
+}
+
+.finlann-modal__primary--danger {
+  background: linear-gradient(135deg, #b91c1c, #ef4444);
+}
+
+/* ── Botão fechar (X) padronizado ────────────────────────── */
+.finlann-modal__close {
+  border: none;
+  border-radius: 12px;
+  width: 28px;
+  height: 28px;
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.finlann-modal__close:hover {
+  background: rgba(148, 163, 184, 0.22);
+  color: #e5e7eb;
+}
+
+/* Botões de seleção/configuração da fatura: quadrados e alinhados */
+.finlann-modal__close.finlann-statement-icon-btn {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border-radius: 10px;
+  font-size: var(--font-size-sm);
 }
 
 /* Ajuste específico do header do modal de cartão: X bem no canto superior direito */
@@ -1320,14 +1540,14 @@
 
 /* Layout específico para popup "Saídas por categoria" (5 colunas: Data | Descrição | Origem | Parc. | Valor) */
 .finlann-statement-table--category .finlann-statement-row {
-  grid-template-columns: 44px minmax(0, 1.4fr) 64px 56px minmax(72px, 96px);
+  grid-template-columns: 44px minmax(0, 1.15fr) 60px 52px minmax(102px, 124px);
   column-gap: 6px;
 }
 
 /* Em telas bem estreitas, deixa tudo mais justinho: menos espaço e colunas levemente ajustadas */
 @media (max-width: 420px) {
   .finlann-statement-table--category .finlann-statement-row {
-    grid-template-columns: 40px minmax(0, 1.1fr) 68px 48px minmax(68px, 88px);
+    grid-template-columns: 40px minmax(0, 1fr) 62px 46px minmax(96px, 116px);
     column-gap: 4px;
   }
 
@@ -1341,8 +1561,31 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  /* encosta mais nas bordas laterais do modal, deixando cara de planilha */
-  margin: 0 -8px 10px;
+  /* mantém respiro lateral para não cortar a coluna de valor no canto */
+  margin: 0 -4px 10px;
+}
+
+/* wrapper para tabelas dos popups:
+   em telas pequenas, habilita scroll horizontal quando faltar espaço */
+.finlann-statement-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.finlann-statement-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.finlann-statement-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.finlann-statement-scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.55);
+  border-radius: 999px;
 }
 
 /* Seção de histórico: card com lista rolável, mas mantendo um gap seguro acima da barra de menu */
@@ -1382,10 +1625,16 @@
   background: rgba(191, 219, 254, 0.9);
 }
 
+/* Tela de cartões: reserva espaço para o botão fixo "+ Adicionar cartão" */
+.finlann-section--cards .finlann-section__scroll {
+  padding-bottom: 108px;
+  max-height: calc(100dvh - 300px);
+}
+
 .finlann-statement-row {
   display: grid;
   /* Data | Descrição | Parc./Meio | Valor colado na direita */
-  grid-template-columns: 44px minmax(0, 1.6fr) 72px minmax(72px, 92px);
+  grid-template-columns: 44px minmax(0, 1.5fr) 64px minmax(90px, 108px);
   align-items: center;
   column-gap: 6px;
   row-gap: 4px;
@@ -1396,7 +1645,7 @@
 /* Tabela de fatura do cartão: layout mais compacto para o Valor não "puxar" tudo para a direita */
 .finlann-statement-table--card .finlann-statement-row {
   /* Data | Descrição | Parc. | Valor */
-  grid-template-columns: 48px minmax(0, 1.6fr) 60px 80px;
+  grid-template-columns: 48px minmax(0, 1.4fr) 54px minmax(96px, 116px);
   column-gap: 10px; /* dá um respiro maior entre Data e Descrição */
 }
 
@@ -1408,6 +1657,7 @@
 }
 
 .finlann-statement-desc {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1420,8 +1670,10 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
+  min-width: 0;
   gap: 4px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .finlann-value-prefix {
@@ -1430,6 +1682,49 @@
 
 .finlann-value-number {
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.finlann-statement-table--category .finlann-value-cell {
+  justify-content: flex-start;
+  gap: 3px;
+}
+
+.finlann-statement-table--category .finlann-value-prefix,
+.finlann-statement-table--category .finlann-value-number {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 430px) {
+  /* mantém legibilidade e prioriza a coluna de valor no mobile */
+  .finlann-statement-row {
+    grid-template-columns: 42px minmax(0, 1fr) 52px minmax(90px, 104px);
+    column-gap: 5px;
+    padding: 4px 6px 4px 8px;
+  }
+
+  .finlann-statement-table--card .finlann-statement-row {
+    grid-template-columns: 42px minmax(0, 1fr) 48px minmax(94px, 108px);
+    column-gap: 6px;
+  }
+
+  /* largura mínima para acionar scroll horizontal apenas quando necessário */
+  .finlann-statement-scroll .finlann-statement-table {
+    min-width: 330px;
+  }
+
+  .finlann-statement-scroll .finlann-statement-table--card {
+    min-width: 360px;
+  }
+
+  .finlann-statement-scroll .finlann-statement-table--category {
+    min-width: 440px;
+  }
+
+  .finlann-statement-table {
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 
 /* Settings screen specific */
@@ -1525,7 +1820,7 @@
 }
 
 .finlann-settings-sync-button {
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: none;
   width: 36px; /* ligeiramente maior para equilibrar com os botões de baixo */
   height: 36px;
@@ -1662,7 +1957,7 @@
   right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid rgba(148, 163, 184, 0.5);
   width: 32px;
   height: 32px;
@@ -1769,7 +2064,7 @@
 }
 
 .finlann-month-popover__month {
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: none;
   background: transparent;
   color: #e5e7eb;
@@ -1871,4 +2166,477 @@
 .finlann-overlay__panel--expense,
 .finlann-overlay__panel--income {
   border-color: var(--finlann-accent, rgba(148, 163, 184, 0.25));
+}
+
+/* ============================================================
+   LOGIN SCREEN — tela de onboarding/autenticação
+   ============================================================ */
+
+.finlann-login-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: calc(100dvh - 64px);
+  padding: 48px 24px 32px;
+  gap: 32px;
+  text-align: center;
+}
+
+.finlann-login-screen--register {
+  justify-content: flex-start;
+  overflow-y: auto;
+  padding-top: 24px;
+}
+
+.finlann-login-logo-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.finlann-login-logo {
+  height: 80px;
+  width: auto;
+}
+
+.finlann-login-logo--small {
+  height: 48px;
+}
+
+.finlann-login-tagline {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-muted);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.finlann-login-ctas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.finlann-login-btn {
+  width: 100%;
+  padding: 14px 24px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.finlann-login-btn:active {
+  transform: scale(0.97);
+}
+
+.finlann-login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.finlann-login-btn--primary {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.finlann-login-btn--primary:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.finlann-login-btn--secondary {
+  background: rgba(30, 41, 59, 0.8);
+  color: #e5e7eb;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.finlann-login-btn--secondary:hover:not(:disabled) {
+  background: rgba(51, 65, 85, 0.9);
+}
+
+.finlann-login-skip {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  transition: color 0.15s;
+}
+
+.finlann-login-skip:hover {
+  color: #e5e7eb;
+}
+
+.finlann-login-form-card {
+  width: 100%;
+  max-width: 380px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 20px;
+  padding: 24px 20px;
+  text-align: left;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.finlann-login-form-title {
+  font-size: var(--font-size-xl);
+  color: #f1f5f9;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.finlann-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.finlann-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.finlann-login-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.finlann-login-row {
+  display: flex;
+  gap: 10px;
+}
+
+.finlann-login-password-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.finlann-login-password-row .finlann-field__input {
+  flex: 1;
+}
+
+.finlann-login-eye-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e5e7eb;
+}
+
+.finlann-login-error-dot {
+  color: #ef4444;
+}
+
+.finlann-login-error-msg {
+  font-size: 13px;
+  color: #f87171;
+  margin: 0;
+}
+
+.finlann-login-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.finlann-login-form-footer__text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.finlann-login-link {
+  background: none;
+  border: none;
+  color: #60a5fa;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.finlann-login-link:hover {
+  color: #93c5fd;
+}
+
+.finlann-field__input--error {
+  border-color: rgba(239, 68, 68, 0.7) !important;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.3);
+}
+
+.finlann-history-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.finlann-history-entry__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.finlann-history-entry .finlann-modal__close {
+  width: 34px;
+  height: 34px;
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.finlann-history-entry__title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.finlann-history-entry__icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(79, 70, 229, 0.2));
+  border: 1px solid rgba(129, 140, 248, 0.5);
+  color: #dbeafe;
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.finlann-history-entry__title {
+  margin: 0;
+  font-size: 29px;
+  font-size: clamp(22px, 4.4vw, 32px);
+  line-height: 1.05;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
+}
+
+.finlann-history-entry__top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 44%);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.finlann-history-entry__date-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(30, 41, 59, 0.45);
+  color: #d1d5db;
+  width: fit-content;
+}
+
+.finlann-history-entry__date-chip img {
+  width: 16px;
+  height: 16px;
+  opacity: 0.85;
+}
+
+.finlann-history-entry__date-chip span {
+  font-size: 19px;
+  font-size: clamp(15px, 2.9vw, 20px);
+  font-weight: 600;
+}
+
+.finlann-history-entry__amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  margin-top: -10px;
+}
+
+.finlann-history-entry__amount strong {
+  font-size: 47px;
+  font-size: clamp(34px, 6.2vw, 52px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #f8fafc;
+}
+
+.finlann-history-entry__amount .finlann-field__label {
+  color: #94a3b8;
+}
+
+.finlann-history-entry__detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.finlann-history-entry__card--payment {
+  border-left: 1px solid rgba(148, 163, 184, 0.2);
+  padding-left: 10px;
+}
+
+.finlann-history-entry__card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.finlann-history-entry__card small {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.finlann-history-entry__category-pill {
+  height: 46px;
+  padding: 0 14px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  font-size: 22px;
+  font-size: clamp(16px, 3.2vw, 24px);
+  font-weight: 700;
+  border: 1px solid rgba(52, 211, 153, 0.5);
+}
+
+.finlann-history-entry__category-pill.is-default,
+.finlann-history-entry__category-pill.is-car,
+.finlann-history-entry__category-pill.is-food,
+.finlann-history-entry__category-pill.is-fun,
+.finlann-history-entry__category-pill.is-shop,
+.finlann-history-entry__category-pill.is-invest,
+.finlann-history-entry__category-pill.is-home,
+.finlann-history-entry__category-pill.is-health {
+  background: linear-gradient(135deg, rgba(6, 95, 70, 0.5), rgba(20, 184, 166, 0.12));
+  color: #86efac;
+}
+
+.finlann-history-entry__category-icon {
+  opacity: 0.9;
+}
+
+.finlann-history-entry__payment-box {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 12px;
+  background: rgba(30, 41, 59, 0.42);
+  padding: 8px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.finlann-history-entry__payment-main {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 18px;
+  font-size: clamp(13px, 2.5vw, 20px);
+  font-weight: 700;
+  min-width: 0;
+}
+
+.finlann-history-entry__payment-main > span:nth-child(2) {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.finlann-history-entry__payment-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #a78bfa, #6366f1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #eef2ff;
+  font-weight: 700;
+}
+
+.finlann-history-entry__payment-chevron {
+  margin-left: auto;
+  color: #94a3b8;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.finlann-history-entry__payment-tag {
+  width: fit-content;
+  border-radius: 9px;
+  padding: 3px 8px;
+  font-size: 14px;
+  font-size: clamp(11px, 2.2vw, 15px);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.finlann-history-entry__note {
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.finlann-history-entry__footer {
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  padding-top: 12px;
+}
+
+.finlann-history-entry__edit-btn {
+  width: 100%;
+  height: 54px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.92), rgba(79, 70, 229, 0.96));
+  color: #eef2ff;
+  font-size: 20px;
+  font-size: clamp(15px, 3vw, 21px);
+  font-weight: 700;
+}
+
+@media (max-width: 520px) {
+  .finlann-history-entry__detail-grid {
+    grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+    gap: 8px;
+  }
+
+  .finlann-history-entry__card--payment {
+    border-left: 1px solid rgba(148, 163, 184, 0.2);
+    padding-left: 9px;
+  }
 }

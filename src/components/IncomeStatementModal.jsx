@@ -131,7 +131,8 @@ export default function IncomeStatementModal({ typeLabel, typeId, incomes, onClo
           </div>
         </div>
 
-        <div className="finlann-statement-table">
+        <div className="finlann-statement-scroll">
+          <div className="finlann-statement-table">
           <div className="finlann-statement-row finlann-statement-row--header">
             <span>Data</span>
             <span>Descrição</span>
@@ -190,6 +191,7 @@ export default function IncomeStatementModal({ typeLabel, typeId, incomes, onClo
               </div>
             );
           })}
+          </div>
         </div>
       </div>
 

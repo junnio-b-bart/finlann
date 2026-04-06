@@ -2,6 +2,7 @@ import { useState } from "react";
 import Overlay from "./Overlay.jsx";
 import CardModal from "./CardModal.jsx";
 import { formatCurrencyInput, parseCurrencyInput } from "../utils/currency.js";
+import { getFirstInvoiceReferenceForExpense } from "../data/finance.js";
 
 const paymentTypes = [
   { id: "credit", label: "Crédito" },
@@ -162,6 +163,23 @@ export default function ExpenseModal({
 
     const expenseBase = initialExpense || {};
 
+    const referenceCard =
+      isCredit && (lockCardId || selectedCardId)
+        ? (existingCards || []).find((c) => c.id === (lockCardId || selectedCardId)) || null
+        : null;
+    const invoiceReference = isCredit
+      ? getFirstInvoiceReferenceForExpense(
+          {
+            purchaseDate: baseDate.toISOString(),
+            createdAt: baseDate.toISOString(),
+          },
+          referenceCard
+        )
+      : {
+          firstInvoiceMonthIndex: baseDate.getMonth(),
+          firstInvoiceYear: baseDate.getFullYear(),
+        };
+
     const expense = {
       ...expenseBase,
       id:
@@ -175,8 +193,8 @@ export default function ExpenseModal({
       // novo modelo de parcelado
       totalInstallments,
       purchaseDate: baseDate.toISOString(),
-      firstInvoiceMonthIndex: baseDate.getMonth(),
-      firstInvoiceYear: baseDate.getFullYear(),
+      firstInvoiceMonthIndex: invoiceReference.firstInvoiceMonthIndex,
+      firstInvoiceYear: invoiceReference.firstInvoiceYear,
       category: selectedCategoryId,
 
       createdAt: expenseBase.createdAt || nowIso,

@@ -129,6 +129,23 @@ export async function createAccount(profile) {
   return data;
 }
 
+export async function updateAccount(userId, updates) {
+  if (!supabase) throw new Error("Supabase não configurado");
+
+  const { data, error } = await supabase
+    .from("finlann_accounts")
+    .update(updates)
+    .eq("user_id", userId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[Finlann] Erro ao atualizar conta:", error);
+    throw error;
+  }
+  return data;
+}
+
 export async function loginAccount({ user_id, password }) {
   if (!supabase) {
     throw new Error("Supabase não configurado");

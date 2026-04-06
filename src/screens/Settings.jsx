@@ -7,7 +7,7 @@ import eyeOpen from "../assets/icons/4.png";
 import eyeClosed from "../assets/icons/3.png";
 
 import { exportState, normalizeState } from "../data/finance.sync.js";
-import { createAccount, loginAccount, loadStateFromBackend, saveStateToBackend } from "../data/finlannBackendClient.js";
+import { createAccount, loginAccount, loadStateFromBackend, saveStateToBackend, updateAccount } from "../data/finlannBackendClient.js";
 import SettingsCards from "./SettingsCards.jsx";
 import SettingsNotifications from "./SettingsNotifications.jsx";
 
@@ -79,6 +79,35 @@ export default function Settings({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Estado da modal de editar conta
+  const [showEditAccountModal, setShowEditAccountModal] = useState(false);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editThemeColor, setEditThemeColor] = useState("#3b82f6");
+  const [editNewPassword, setEditNewPassword] = useState("");
+  const [editConfirmNewPassword, setEditConfirmNewPassword] = useState("");
+  const [editShowNewPassword, setEditShowNewPassword] = useState(false);
+  const [editShowConfirmPassword, setEditShowConfirmPassword] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editSuccess, setEditSuccess] = useState(false);
+
+  function openEditAccountModal() {
+    if (!currentAccount) return;
+    setEditFirstName(currentAccount.first_name || "");
+    setEditLastName(currentAccount.last_name || "");
+    setEditEmail(currentAccount.email || "");
+    setEditThemeColor(currentAccount.theme_color || "#3b82f6");
+    setEditNewPassword("");
+    setEditConfirmNewPassword("");
+    setEditError("");
+    setEditSuccess(false);
+    setEditShowNewPassword(false);
+    setEditShowConfirmPassword(false);
+    setShowEditAccountModal(true);
+  }
+
   function openAccountModal(mode) {
     setAccountModalMode(mode);
     setModalEmail("");
@@ -137,18 +166,9 @@ export default function Settings({
           (local.incomes?.length || 0) === 0;
 
         if (!remoteState && !localIsEmpty) {
-          const choice = window.prompt(
-            "Sua conta Finlann está vazia, mas este dispositivo já tem dados.\n" +
-              "Digite:\n" +
-              "1 - Limpar este app e começar uma conta zerada\n" +
-              "2 - Usar apenas os dados deste dispositivo",
-            "2"
-          );
-
-          if (choice === "1") {
-            onResetState?.();
-          }
-          // escolha "2" mantém o estado local; autosave depois sobe para a conta
+          // Conta nova vazia, mas há dados locais → usa o conflito estilizado
+          setAccountConflict({ remoteState: null, emptyRemote: true });
+          // escolha via modal de conflito abaixo; o autosave depois sobe os dados locais
         } else if (remoteState && localIsEmpty) {
           // app vazio, conta com dados -> usar dados da conta
           if (onSyncState) {
@@ -203,8 +223,13 @@ export default function Settings({
 
         <div className="finlann-settings-profile-row" style={{ gap: 6 }}>
           <div className="finlann-settings-avatar">
-            <span className="finlann-settings-avatar__circle finlann-settings-avatar__circle--large">
-              F
+            <span
+              className="finlann-settings-avatar__circle finlann-settings-avatar__circle--large"
+              style={currentAccount?.theme_color ? { background: currentAccount.theme_color } : undefined}
+            >
+              {currentAccount
+                ? `${(currentAccount.first_name || "?")[0]}${(currentAccount.last_name || "")[0] || ""}`.toUpperCase()
+                : "F"}
             </span>
           </div>
 
@@ -278,9 +303,7 @@ export default function Settings({
                 type="button"
                 className="finlann-chip finlann-chip--outline"
                 style={{ flex: 1 }}
-                onClick={() => {
-                  setShowEditAccountModal(true);
-                }}
+                onClick={() => openEditAccountModal()}
               >
                 Editar conta
               </button>
@@ -390,32 +413,30 @@ export default function Settings({
               />
             </div>
 
-            <div className="finlann-settings-actions" style={{ marginTop: 8 }}>
-              <div className="finlann-settings-actions-row">
-                <button
-                  type="button"
-                  className="finlann-chip finlann-chip--outline"
-                  onClick={() => {
-                    setEraseConfirmation("");
-                    setShowEraseModal(false);
-                  }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="finlann-chip finlann-chip--solid finlann-chip--accent"
-                  disabled={eraseConfirmation !== "APAGAR TODOS OS DADOS"}
-                  onClick={() => {
-                    if (eraseConfirmation !== "APAGAR TODOS OS DADOS") return;
-                    setEraseConfirmation("");
-                    setShowEraseModal(false);
-                    onResetState?.();
-                  }}
-                >
-                  Confirmar exclusão
-                </button>
-              </div>
+            <div className="finlann-modal__footer finlann-modal__footer--split">
+              <button
+                type="button"
+                className="finlann-modal__secondary"
+                onClick={() => {
+                  setEraseConfirmation("");
+                  setShowEraseModal(false);
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="finlann-modal__primary finlann-modal__primary--danger"
+                disabled={eraseConfirmation !== "APAGAR TODOS OS DADOS"}
+                onClick={() => {
+                  if (eraseConfirmation !== "APAGAR TODOS OS DADOS") return;
+                  setEraseConfirmation("");
+                  setShowEraseModal(false);
+                  onResetState?.();
+                }}
+              >
+                Confirmar exclusão
+              </button>
             </div>
           </div>
         </div>
@@ -735,19 +756,18 @@ export default function Settings({
               )}
             </div>
 
-            <div className="finlann-settings-actions" style={{ marginTop: 8 }}>
-              <div className="finlann-settings-actions-row">
-                <button
-                  type="button"
-                  className="finlann-chip finlann-chip--outline"
-                  onClick={closeAccountModal}
-                >
-                  Cancelar
-                </button>
-                {accountModalMode === "create" && (
+            <div className="finlann-modal__footer finlann-modal__footer--split">
+              <button
+                type="button"
+                className="finlann-modal__secondary"
+                onClick={closeAccountModal}
+              >
+                Cancelar
+              </button>
+              {accountModalMode === "create" && (
                   <button
                     type="button"
-                    className="finlann-chip finlann-chip--solid finlann-chip--accent"
+                    className="finlann-modal__primary"
                     onClick={async () => {
                       // zera flags
                       setModalEmailError(false);
@@ -825,16 +845,15 @@ export default function Settings({
                     Criar conta
                   </button>
                 )}
-                {accountModalMode === "login" && (
-                  <button
-                    type="button"
-                    className="finlann-chip finlann-chip--solid finlann-chip--accent"
-                    onClick={handleLoginSubmit}
-                  >
-                    Entrar
-                  </button>
-                )}
-              </div>
+              {accountModalMode === "login" && (
+                <button
+                  type="button"
+                  className="finlann-modal__primary"
+                  onClick={handleLoginSubmit}
+                >
+                  Entrar
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -848,20 +867,32 @@ export default function Settings({
               <h2 className="finlann-modal__title">Qual dado usar?</h2>
             </header>
             <div className="finlann-modal__body">
-              <p className="finlann-settings-profile-subtitle">
-                Encontramos dados neste dispositivo <strong>e</strong> na sua conta Finlann.
-              </p>
-              <p className="finlann-settings-profile-subtitle" style={{ marginTop: 8 }}>
-                Escolha qual fonte quer usar agora:
-              </p>
+              {accountConflict?.emptyRemote ? (
+                <>
+                  <p className="finlann-settings-profile-subtitle">
+                    Sua conta Finlann está vazia, mas este dispositivo já tem dados.
+                  </p>
+                  <p className="finlann-settings-profile-subtitle" style={{ marginTop: 8 }}>
+                    O que você quer fazer?
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="finlann-settings-profile-subtitle">
+                    Encontramos dados neste dispositivo <strong>e</strong> na sua conta Finlann.
+                  </p>
+                  <p className="finlann-settings-profile-subtitle" style={{ marginTop: 8 }}>
+                    Escolha qual fonte quer usar agora:
+                  </p>
+                </>
+              )}
             </div>
-            <div className="finlann-settings-actions" style={{ marginTop: 8 }}>
-              <div className="finlann-settings-actions-row">
+            <div className="finlann-modal__footer finlann-modal__footer--split">
+              {!accountConflict?.emptyRemote && (
                 <button
                   type="button"
-                  className="finlann-chip finlann-chip--outline"
+                  className="finlann-modal__secondary"
                   onClick={() => {
-                    // usar apenas os dados da conta
                     if (accountConflict.remoteState && onSyncState) {
                       onSyncState(accountConflict.remoteState);
                     }
@@ -870,23 +901,250 @@ export default function Settings({
                 >
                   Usar dados da conta
                 </button>
+              )}
+              {accountConflict?.emptyRemote && (
                 <button
                   type="button"
-                  className="finlann-chip finlann-chip--solid finlann-chip--accent"
-                  onClick={async () => {
-                    // manter apenas os dados deste dispositivo; autosave já atualiza a conta,
-                    // mas forçamos um save agora para garantir
-                    try {
-                      await saveStateToBackend(financeState, currentAccount?.user_id);
-                    } catch (e) {
-                      console.warn("[Finlann] Erro ao salvar estado local como fonte principal após conflito:", e);
-                    }
+                  className="finlann-modal__secondary"
+                  onClick={() => {
+                    onResetState?.();
                     setAccountConflict(null);
                   }}
                 >
-                  Usar dados deste dispositivo
+                  Começar do zero
                 </button>
+              )}
+              <button
+                type="button"
+                className="finlann-modal__primary"
+                onClick={async () => {
+                  try {
+                    await saveStateToBackend(financeState, currentAccount?.user_id);
+                  } catch (e) {
+                    console.warn("[Finlann] Erro ao salvar estado local após conflito:", e);
+                  }
+                  setAccountConflict(null);
+                }}
+              >
+                Usar dados deste dispositivo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditAccountModal && (
+        <div className="finlann-overlay">
+          <div
+            className="finlann-overlay__panel"
+            style={{
+              border: `1.5px solid ${editThemeColor}`,
+              backgroundImage: `linear-gradient(135deg, #020617 0%, #020617 20%, ${editThemeColor}22 60%, ${editThemeColor}44 100%)`,
+            }}
+          >
+            <header className="finlann-modal__header">
+              <p className="finlann-modal__eyebrow">Conta Finlann</p>
+              <h2 className="finlann-modal__title">Editar conta</h2>
+              <button
+                type="button"
+                className="finlann-modal__close"
+                onClick={() => setShowEditAccountModal(false)}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </header>
+
+            <div className="finlann-modal__body finlann-modal__body--scroll">
+              {/* Avatar com iniciais */}
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+                <span
+                  className="finlann-settings-avatar__circle finlann-settings-avatar__circle--large"
+                  style={{ width: 64, height: 64, fontSize: 26, background: editThemeColor }}
+                >
+                  {`${(editFirstName || "?")[0]}${(editLastName || "")[0] || ""}`.toUpperCase()}
+                </span>
               </div>
+
+              {/* Nome + Sobrenome */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <label className="finlann-login-label">NOME</label>
+                  <input
+                    type="text"
+                    className="finlann-field__input"
+                    placeholder="Nome"
+                    value={editFirstName}
+                    onChange={(e) => setEditFirstName(e.target.value)}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="finlann-login-label">SOBRENOME</label>
+                  <input
+                    type="text"
+                    className="finlann-field__input"
+                    placeholder="Sobrenome"
+                    value={editLastName}
+                    onChange={(e) => setEditLastName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* E-mail */}
+              <div style={{ marginBottom: 12 }}>
+                <label className="finlann-login-label">E-MAIL</label>
+                <input
+                  type="email"
+                  className="finlann-field__input"
+                  placeholder="seu@email.com"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                />
+              </div>
+
+              {/* Nome da conta (read-only) */}
+              <div style={{ marginBottom: 16 }}>
+                <label className="finlann-login-label">NOME DA CONTA</label>
+                <input
+                  type="text"
+                  className="finlann-field__input"
+                  value={currentAccount?.user_id || ""}
+                  disabled
+                  style={{ opacity: 0.45, cursor: "not-allowed" }}
+                />
+                <p style={{ fontSize: 11, color: "rgba(148,163,184,0.5)", marginTop: 3 }}>
+                  O nome da conta não pode ser alterado.
+                </p>
+              </div>
+
+              {/* Nova senha */}
+              <div style={{ marginBottom: 12 }}>
+                <label className="finlann-login-label">
+                  NOVA SENHA{" "}
+                  <span style={{ opacity: 0.5, fontWeight: 400 }}>(opcional)</span>
+                </label>
+                <div className="finlann-login-password-row">
+                  <input
+                    type={editShowNewPassword ? "text" : "password"}
+                    className="finlann-field__input"
+                    placeholder="Deixe em branco para não alterar"
+                    value={editNewPassword}
+                    onChange={(e) => setEditNewPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="finlann-login-eye-btn"
+                    onClick={() => setEditShowNewPassword((p) => !p)}
+                    tabIndex={-1}
+                  >
+                    <img src={editShowNewPassword ? eyeClosed : eyeOpen} alt="" style={{ width: 18, height: 18 }} />
+                  </button>
+                </div>
+              </div>
+
+              {editNewPassword && (
+                <div style={{ marginBottom: 16 }}>
+                  <label className="finlann-login-label">CONFIRMAR NOVA SENHA</label>
+                  <div className="finlann-login-password-row">
+                    <input
+                      type={editShowConfirmPassword ? "text" : "password"}
+                      className="finlann-field__input"
+                      placeholder="Repita a nova senha"
+                      value={editConfirmNewPassword}
+                      onChange={(e) => setEditConfirmNewPassword(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="finlann-login-eye-btn"
+                      onClick={() => setEditShowConfirmPassword((p) => !p)}
+                      tabIndex={-1}
+                    >
+                      <img src={editShowConfirmPassword ? eyeClosed : eyeOpen} alt="" style={{ width: 18, height: 18 }} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Cor da conta */}
+              <div style={{ marginBottom: 16 }}>
+                <label className="finlann-login-label">COR DA CONTA</label>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                  {["#3b82f6", "#8b5cf6", "#ec4899", "#22c55e", "#f97316", "#0ea5e9"].map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setEditThemeColor(color)}
+                      style={{
+                        width: 26, height: 26, borderRadius: "50%",
+                        backgroundColor: color,
+                        border: editThemeColor === color ? "2.5px solid #fff" : "2px solid transparent",
+                        cursor: "pointer", padding: 0,
+                        transition: "transform 0.15s",
+                        transform: editThemeColor === color ? "scale(1.2)" : "scale(1)",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {editError && (
+                <p style={{ fontSize: 12, color: "#f87171", marginBottom: 8 }}>{editError}</p>
+              )}
+              {editSuccess && (
+                <p style={{ fontSize: 12, color: "#4ade80", marginBottom: 8 }}>
+                  ✓ Conta atualizada com sucesso!
+                </p>
+              )}
+            </div>
+
+            <div className="finlann-modal__footer finlann-modal__footer--split">
+              <button
+                type="button"
+                className="finlann-modal__secondary"
+                onClick={() => setShowEditAccountModal(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="finlann-modal__primary"
+                style={editSaving ? undefined : { background: editThemeColor }}
+                disabled={editSaving}
+                onClick={async () => {
+                  setEditError("");
+                  setEditSuccess(false);
+
+                  if (editNewPassword && editNewPassword !== editConfirmNewPassword) {
+                    setEditError("As senhas não coincidem.");
+                    return;
+                  }
+
+                  setEditSaving(true);
+                  try {
+                    const updates = {
+                      first_name: editFirstName.trim(),
+                      last_name: editLastName.trim(),
+                      email: editEmail.trim(),
+                      theme_color: editThemeColor,
+                    };
+                    if (editNewPassword) {
+                      updates.has_password = true;
+                      updates.password = editNewPassword;
+                    }
+                    const updated = await updateAccount(currentAccount.user_id, updates);
+                    setAndPersistCurrentAccount(updated);
+                    setEditSuccess(true);
+                    setTimeout(() => setShowEditAccountModal(false), 1200);
+                  } catch (err) {
+                    console.error("[Finlann] Erro ao atualizar conta:", err);
+                    setEditError("Não foi possível salvar. Tente novamente.");
+                  } finally {
+                    setEditSaving(false);
+                  }
+                }}
+              >
+                {editSaving ? "Salvando…" : "Salvar alterações"}
+              </button>
             </div>
           </div>
         </div>
@@ -904,34 +1162,32 @@ export default function Settings({
                 Deseja sair da conta Finlann atual?
               </p>
             </div>
-            <div className="finlann-settings-actions" style={{ marginTop: 8 }}>
-              <div className="finlann-settings-actions-row">
-                <button
-                  type="button"
-                  className="finlann-chip finlann-chip--outline"
-                  onClick={() => setShowLogoutConfirm(false)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="finlann-chip finlann-chip--solid finlann-chip--accent"
-                  onClick={() => {
-                    setShowLogoutConfirm(false);
-                    onResetState?.();
-                    setAndPersistCurrentAccount(null);
-                    try {
-                      if (typeof window !== "undefined") {
-                        window.localStorage.removeItem("finlann.currentAccount");
-                        window.localStorage.removeItem("finlann.householdId");
-                        window.localStorage.removeItem("finlann-state-v1");
-                      }
-                    } catch {}
-                  }}
-                >
-                  Sair da conta
-                </button>
-              </div>
+            <div className="finlann-modal__footer finlann-modal__footer--split">
+              <button
+                type="button"
+                className="finlann-modal__secondary"
+                onClick={() => setShowLogoutConfirm(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="finlann-modal__primary finlann-modal__primary--danger"
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  onResetState?.();
+                  setAndPersistCurrentAccount(null);
+                  try {
+                    if (typeof window !== "undefined") {
+                      window.localStorage.removeItem("finlann.currentAccount");
+                      window.localStorage.removeItem("finlann.householdId");
+                      window.localStorage.removeItem("finlann-state-v1");
+                    }
+                  } catch {}
+                }}
+              >
+                Sair da conta
+              </button>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Overlay from "./Overlay.jsx";
+import Dialog from "./Dialog.jsx";
 
 const COLORS = [
   { id: "purple", label: "Roxo", value: "#a855f7" },
@@ -16,8 +17,27 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
   const [colorId, setColorId] = useState(COLORS[0].id);
   const [customColor, setCustomColor] = useState(null);
   const [useCustomColor, setUseCustomColor] = useState(false);
-  const [closeDay, setCloseDay] = useState(initialCard?.billingCloseDay || "");
-  const [dueDay, setDueDay] = useState(initialCard?.billingDueDay || "");
+
+  // Valores iniciais de fechamento/vencimento considerando tanto
+  // os campos antigos (billingCloseDay/billingDueDay) quanto
+  // os novos (closingDay/dueDay) para manter compatibilidade.
+  const initialCloseDay =
+    initialCard?.billingCloseDay ??
+    (typeof initialCard?.closingDay === "number"
+      ? String(initialCard.closingDay)
+      : "");
+  const initialDueDay =
+    initialCard?.billingDueDay ??
+    (typeof initialCard?.dueDay === "number" ? String(initialCard.dueDay) : "");
+
+  const [closeDay, setCloseDay] = useState(initialCloseDay);
+  const [dueDay, setDueDay] = useState(initialDueDay);
+
+  // Quando o usuário altera os dias de fechamento/vencimento em um cartão
+  // já existente, precisamos perguntar como aplicar essa mudança:
+  // - apenas na fatura atual
+  // - ou em todas a partir de agora (incluindo a atual)
+  const [showScopeChoices, setShowScopeChoices] = useState(false);
 
   const presetColor = COLORS.find((c) => c.id === colorId)?.value || COLORS[0].value;
   const effectiveColor = useCustomColor && customColor ? customColor : presetColor;
@@ -50,11 +70,14 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
     }
   }, [initialCard]);
 
-  function handleSave() {
+  function buildCardPayload(scope = "all_from_now") {
     if (!name.trim()) return; // depois podemos mostrar erro visual
 
     const colorValue = effectiveColor;
     const nowIso = new Date().toISOString();
+
+    const numericCloseDay = closeDay ? Number(closeDay) : undefined;
+    const numericDueDay = dueDay ? Number(dueDay) : undefined;
 
     // converte seleção múltipla em uma string única de tipo
     let kind;
@@ -66,16 +89,70 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
       kind = "credit";
     }
 
-    onSave?.({
+    // Valores base de fechamento/vencimento no cartão
+    let closingDayBase =
+      typeof initialCard?.closingDay === "number"
+        ? initialCard.closingDay
+        : numericCloseDay;
+    let dueDayBase =
+      typeof initialCard?.dueDay === "number" ? initialCard.dueDay : numericDueDay;
+
+    // Para "todas a partir de agora", atualizamos os defaults do cartão
+    if (scope === "all_from_now") {
+      if (typeof numericCloseDay === "number" && !Number.isNaN(numericCloseDay)) {
+        closingDayBase = numericCloseDay;
+      }
+      if (typeof numericDueDay === "number" && !Number.isNaN(numericDueDay)) {
+        dueDayBase = numericDueDay;
+      }
+    }
+
+    // Override de fatura atual: usamos o mês/ano correntes como
+    // "fatura atual" para simplificar o modelo.
+    let currentInvoiceClosingDay = initialCard?.currentInvoiceClosingDay;
+    let currentInvoiceDueDay = initialCard?.currentInvoiceDueDay;
+    let currentInvoiceYear = initialCard?.currentInvoiceYear;
+    let currentInvoiceMonthIndex = initialCard?.currentInvoiceMonthIndex;
+
+    if (scope === "current_only" || scope === "all_from_now") {
+      const now = new Date();
+      currentInvoiceYear = now.getFullYear();
+      currentInvoiceMonthIndex = now.getMonth();
+      currentInvoiceClosingDay =
+        typeof numericCloseDay === "number" && !Number.isNaN(numericCloseDay)
+          ? numericCloseDay
+          : closingDayBase;
+      currentInvoiceDueDay =
+        typeof numericDueDay === "number" && !Number.isNaN(numericDueDay)
+          ? numericDueDay
+          : dueDayBase;
+    }
+
+    return {
       id: initialCard?.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       label: name.trim(),
       color: colorValue,
+      // Mantemos os campos antigos para compatibilidade com dados já salvos,
+      // mas passamos também os novos campos numéricos usados no motor de
+      // faturas (closingDay/dueDay).
       billingCloseDay: closeDay.trim(),
       billingDueDay: dueDay.trim(),
+      closingDay: closingDayBase,
+      dueDay: dueDayBase,
+      currentInvoiceClosingDay,
+      currentInvoiceDueDay,
+      currentInvoiceYear,
+      currentInvoiceMonthIndex,
       kind,
       updatedAt: nowIso,
       createdAt: initialCard?.createdAt || nowIso,
-    });
+    };
+  }
+
+  function handleSave(scope = "all_from_now") {
+    const payload = buildCardPayload(scope);
+    if (!payload) return;
+    onSave?.(payload);
   }
 
   return (
@@ -218,11 +295,60 @@ export default function CardModal({ onClose, onSave, initialCard, initialKind = 
         <button
           type="button"
           className="finlann-modal__primary"
-          onClick={handleSave}
+          onClick={() => {
+            if (isEditing) {
+              const billingChanged =
+                String(closeDay || "") !== String(initialCloseDay || "") ||
+                String(dueDay || "") !== String(initialDueDay || "");
+              if (billingChanged) {
+                setShowScopeChoices(true);
+                return;
+              }
+            }
+            handleSave("all_from_now");
+          }}
         >
           {isEditing ? "Salvar alterações" : "Salvar cartão"}
         </button>
       </footer>
+
+      {showScopeChoices && isEditing && (
+        <Dialog
+          title="Como aplicar mudança?"
+          description="Escolha se as novas datas valem só para a fatura atual ou para este e os próximos meses."
+          onClose={() => setShowScopeChoices(false)}
+        >
+          <div className="finlann-dialog__actions">
+            <button
+              type="button"
+              className="finlann-modal__primary"
+              onClick={() => {
+                handleSave("all_from_now");
+                setShowScopeChoices(false);
+              }}
+            >
+              Todas a partir de agora (inclui a atual)
+            </button>
+            <button
+              type="button"
+              className="finlann-modal__secondary"
+              onClick={() => {
+                handleSave("current_only");
+                setShowScopeChoices(false);
+              }}
+            >
+              Apenas fatura atual
+            </button>
+            <button
+              type="button"
+              className="finlann-modal__secondary"
+              onClick={() => setShowScopeChoices(false)}
+            >
+              Cancelar
+            </button>
+          </div>
+        </Dialog>
+      )}
     </Overlay>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import "../styles/globals.css";
 import "../styles/tokens.css";
 import ExpenseModal from "../components/ExpenseModal.jsx";
@@ -8,7 +8,7 @@ import IncomeStatementModal from "../components/IncomeStatementModal.jsx";
 import MonthPickerModal from "../components/MonthPickerModal.jsx";
 import MonthPopover from "../components/MonthPopover.jsx";
 import Overlay from "../components/Overlay.jsx";
-import { getMonthlySummary, getCardDualInvoicesForMonth, computeCardInvoiceItemsForMonth } from "../data/finance.js";
+import { getMonthlySummary, getCardInvoiceForMonth, getCardInvoiceItemsForMonth, getCardInvoiceCycleDates, isInvoicePaid } from "../data/finance.js";
 import logoFinlann from "../assets/FinlannLogo.png";
 import calendarioIcon from "../assets/icons/calendario.png";
 
@@ -33,6 +33,24 @@ function isSameMonthYear(isoDate, monthIndex, year) {
   return d.getMonth() === monthIndex && d.getFullYear() === year;
 }
 
+function formatDayMonth(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${day}/${month}`;
+}
+
+function toMoneyNumber(value) {
+  const n = Number(value);
+  if (Number.isFinite(n)) return n;
+  if (typeof value === "string") {
+    const normalized = value.replace(/\./g, "").replace(",", ".");
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
 export default function Dashboard({
   financeState,
   onAddExpense,
@@ -44,6 +62,7 @@ export default function Dashboard({
   onRemoveIncomes,
   onUpdateIncomes,
   onUpdateExpenses,
+  onPayInvoice,
 }) {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showIncomeModal, setShowIncomeModal] = useState(false);
@@ -64,6 +83,7 @@ export default function Dashboard({
   // Popups de resumo a partir dos chips superiores
   const [showIncomeSummaryModal, setShowIncomeSummaryModal] = useState(false);
   const [showExpenseSummaryModal, setShowExpenseSummaryModal] = useState(false);
+  const monthTriggerRef = useRef(null);
 
   // Controle de retrátil para resumos (versão em lista dentro da página)
   const [showIncomeSummary, setShowIncomeSummary] = useState(true);
@@ -75,6 +95,16 @@ export default function Dashboard({
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
 
   const summary = getMonthlySummary(financeState, currentMonthIndex, currentYear);
+  const expensesByCategoryFromEntries = useMemo(() => {
+    const totals = {};
+    for (const expense of financeState.expenses || []) {
+      const refDate = expense.createdAt || expense.purchaseDate;
+      if (!isSameMonthYear(refDate, currentMonthIndex, currentYear)) continue;
+      const categoryKey = expense.category || "outros";
+      totals[categoryKey] = (totals[categoryKey] || 0) + toMoneyNumber(expense.amount);
+    }
+    return totals;
+  }, [financeState.expenses, currentMonthIndex, currentYear]);
   // Total de saídas exibido no card "Saídas":
   // - inclui as saídas do mês selecionado (cartões + pix + débito + dinheiro);
   // - soma também as faturas em aberto do mês anterior (cartões) que ainda não
@@ -85,11 +115,12 @@ export default function Dashboard({
 
   let openFromPrevious = 0;
   for (const card of financeState.cards) {
-    const cardExpenses = financeState.expenses.filter(
-      (e) => e.method === "credit" && e.cardId === card.id && e.paid !== true
-    );
-    const { total: prevTotal } = computeCardInvoiceItemsForMonth(
-      cardExpenses,
+    if (isInvoicePaid(financeState, card.id, previousMonthIndex, previousYear)) {
+      continue;
+    }
+    const { total: prevTotal } = getCardInvoiceForMonth(
+      financeState,
+      card.id,
       previousMonthIndex,
       previousYear
     );
@@ -97,6 +128,35 @@ export default function Dashboard({
   }
 
   const totalExpensesForMonth = summary.totalExpenses + openFromPrevious;
+  const displayedBalance = summary.totalIncomes - totalExpensesForMonth;
+
+  function buildInvoiceCycleEntry(card, monthIdx, year) {
+    if (!card) return null;
+    if (isInvoicePaid(financeState, card.id, monthIdx, year)) return null;
+
+    const { total } = getCardInvoiceForMonth(financeState, card.id, monthIdx, year);
+    if (total <= 0) return null;
+
+    const { closingDate, dueDate } = getCardInvoiceCycleDates(card, monthIdx, year);
+
+    let status = "open";
+    if (closingDate && today >= closingDate) {
+      status = dueDate && today > dueDate ? "overdue" : "closed";
+    }
+
+    return {
+      card,
+      total,
+      monthIdx,
+      year,
+      status,
+      closingDate,
+      dueDate,
+      referenceLabel: `${MONTH_LABELS[monthIdx]} ${year}`,
+      closingLabel: formatDayMonth(closingDate),
+      dueLabel: formatDayMonth(dueDate),
+    };
+  }
 
   // Paleta de cores configurável por categoria (usada no gráfico de pizza e nos círculos do resumo)
   const CATEGORY_COLOR_OPTIONS = [
@@ -147,8 +207,7 @@ export default function Dashboard({
     }
   });
 
-  // DEBUG TEMPORÁRIO: ajuda a entender por que o resumo de saídas está zerado
-  const debugFirstExpense = financeState.expenses[0] || null;
+  // Último cartão de crédito usado — sugestão no modal de nova saída
   const lastCreditExpense = [...financeState.expenses]
     .filter((e) => e.method === "credit" && e.cardId)
     .slice(-1)[0];
@@ -158,7 +217,7 @@ export default function Dashboard({
     value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   // Gera o estilo dinâmico do gráfico de pizza a partir das categorias do mês
-  const categoryEntries = Object.entries(summary.expensesByCategory || {}).filter(
+  const categoryEntries = Object.entries(expensesByCategoryFromEntries || {}).filter(
     ([, total]) => total > 0
   );
   const totalCategoriesAmount = categoryEntries.reduce(
@@ -219,6 +278,7 @@ export default function Dashboard({
                 />
               </div>
               <button
+                ref={monthTriggerRef}
                 type="button"
                 className="finlann-header__subtitle finlann-header__subtitle--clickable"
                 onClick={() => setShowMonthPicker((prev) => !prev)}
@@ -258,7 +318,7 @@ export default function Dashboard({
 
           <article className="finlann-card finlann-card--balance">
             <p className="finlann-card__label">Saldo</p>
-            <p className="finlann-card__value">{format(summary.balance)}</p>
+            <p className="finlann-card__value">{format(displayedBalance)}</p>
           </article>
 
           {/* Cartões em aberto: soma de todas as despesas de cartão de crédito
@@ -407,7 +467,7 @@ export default function Dashboard({
             {showExpenseSummary && (
               <div className="finlann-list">
                 {financeState.cards.length === 0 &&
-                  Object.keys(summary.expensesByCategory || {}).length === 0 && (
+                  Object.keys(expensesByCategoryFromEntries || {}).length === 0 && (
                     <div className="finlann-list-item" style={{ opacity: 0.7 }}>
                       <div className="finlann-list-item__left">
                         <span className="finlann-list-item__avatar finlann-list-item__avatar--credit" />
@@ -424,8 +484,8 @@ export default function Dashboard({
                 {/* Quando não há cartões, mas já existem saídas categorizadas,
                     mostramos um resumo por categoria direto aqui */}
                 {financeState.cards.length === 0 &&
-                  Object.keys(summary.expensesByCategory || {}).length > 0 &&
-                  Object.entries(summary.expensesByCategory || {}).map(
+                  Object.keys(expensesByCategoryFromEntries || {}).length > 0 &&
+                  Object.entries(expensesByCategoryFromEntries || {}).map(
                     ([categoryId, total]) => {
                       const label =
                         categoryId === "alimentacao"
@@ -477,7 +537,7 @@ export default function Dashboard({
                       key={card.id}
                       className="finlann-list-item"
                       type="button"
-                      onClick={() => setStatementCard(card)}
+                      onClick={() => setStatementCard({ card, scope: "current", monthIdx: currentMonthIndex, year: currentYear })}
                     >
                       <div className="finlann-list-item__left">
                         <span
@@ -608,6 +668,7 @@ export default function Dashboard({
           onClick={() => setShowMonthPicker(false)}
         >
           <MonthPopover
+            anchor={monthTriggerRef}
             currentMonthIndex={currentMonthIndex}
             currentYear={currentYear}
             onChange={({ monthIndex, year }) => {
@@ -709,266 +770,251 @@ export default function Dashboard({
           </header>
           <div className="finlann-modal__body finlann-modal__body--scroll">
             <div className="finlann-list">
-              {financeState.cards.length === 0 &&
-                Object.keys(summary.expensesByCategory || {}).length === 0 && (
-                  <div className="finlann-list-item" style={{ opacity: 0.7 }}>
-                    <div className="finlann-list-item__left">
-                      <span className="finlann-list-item__avatar finlann-list-item__avatar--credit" />
-                      <div>
-                        <p className="finlann-list-item__title">Nenhum cartão ainda</p>
-                        <p className="finlann-list-item__subtitle">
-                          Crie seu primeiro cartão na hora de registrar uma saída.
-                        </p>
+              {/* ────────────────────────────────────────────────────────────
+                  SEÇÃO A · À VISTA
+                  Pix, Débito, Dinheiro e Transferência ficam presos no mês
+                  em que aconteceram — não rolam para o mês seguinte.
+                  ──────────────────────────────────────────────────────────── */}
+              {(() => {
+
+                // Filtra despesas à vista do mês sendo visualizado
+                const vistaExpenses = financeState.expenses.filter((e) => {
+                  const dt = e.purchaseDate || e.createdAt;
+                  if (!isSameMonthYear(dt, currentMonthIndex, currentYear)) return false;
+                  // Tudo que não for crédito em cartão de crédito
+                  return !(e.method === "credit" && e.cardId);
+                });
+
+                if (vistaExpenses.length === 0) return null;
+
+                // Agrupa por método + cardId (para débito em cartão)
+                const groups = {};
+
+                for (const e of vistaExpenses) {
+                  let key, label, color;
+                  if (e.method === "debit" && e.cardId) {
+                    const c = (financeState.cards || []).find((c) => c.id === e.cardId);
+                    key = `debit-${e.cardId}`;
+                    label = c ? `${c.label} · Débito` : "Cartão · Débito";
+                    color = c?.color || null;
+                  } else if (e.method === "pix") {
+                    key = "pix"; label = "Pix"; color = "#22d3ee";
+                  } else if (e.method === "debit") {
+                    key = "debit"; label = "Débito"; color = "#818cf8";
+                  } else if (e.method === "cash") {
+                    key = "cash"; label = "Dinheiro"; color = "#4ade80";
+                  } else if (e.method === "transfer") {
+                    key = "transfer"; label = "Transferência"; color = "#a78bfa";
+                  } else {
+                    key = e.method || "outros"; label = "Outros"; color = null;
+                  }
+
+                  if (!groups[key]) {
+                    groups[key] = {
+                      label,
+                      color,
+                      total: 0,
+                      count: 0,
+                      cardId: e.cardId,
+                      method: e.method,
+                    };
+                  }
+                  groups[key].total += toMoneyNumber(e.amount);
+                  groups[key].count += 1;
+                }
+
+                const entries = Object.entries(groups);
+                if (entries.length === 0) return null;
+
+                return (
+                  <>
+                    {entries.length > 1 && (
+                      <div className="finlann-list-separator">
+                        <span className="finlann-list-separator__label">À vista</span>
                       </div>
-                    </div>
-                  </div>
-                )}
-
-              {/* Quando não há cartões, mas já existem saídas categorizadas,
-                  mostramos um resumo por categoria (mesma lógica do dashboard) */}
-              {financeState.cards.length === 0 &&
-                Object.keys(summary.expensesByCategory || {}).length > 0 &&
-                Object.entries(summary.expensesByCategory || {}).map(
-                  ([categoryId, total]) => {
-                    const label =
-                      categoryId === "alimentacao"
-                        ? "Alimentação"
-                        : categoryId === "carro"
-                        ? "Carro"
-                        : categoryId === "lazer"
-                        ? "Lazer"
-                        : categoryId === "compras"
-                        ? "Compras"
-                        : categoryId === "investimentos"
-                        ? "Investimentos"
-                        : categoryId === "casa"
-                        ? "Casa"
-                        : categoryId === "saude"
-                        ? "Saúde"
-                        : categoryId === "outros"
-                        ? "Outros"
-                        : categoryId
-                            .split("_")
-                            .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
-                            .join(" ");
-
-                    return (
+                    )}
+                    {entries.map(([key, g]) => (
                       <button
-                        key={categoryId}
+                        key={key}
                         type="button"
                         className="finlann-list-item"
-                        onClick={() =>
-                          setCategoryStatement({ id: categoryId, label })
-                        }
+                        onClick={() => {
+                          // Abre extrato por método (via categoryStatement como filtro)
+                          setCategoryStatement({
+                            label: g.label,
+                            methodKey: g.method,
+                            cardId: g.cardId || null,
+                            color: g.color || undefined,
+                          });
+                        }}
                       >
                         <div className="finlann-list-item__left">
-                          <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
+                          <span
+                            className="finlann-list-item__avatar finlann-list-item__avatar--expense"
+                            style={g.color ? { background: g.color } : undefined}
+                          />
                           <div>
-                            <p className="finlann-list-item__title">{label}</p>
-                            
+                            <p className="finlann-list-item__title">{g.label}</p>
+                            <p className="finlann-list-item__subtitle">
+                              {g.count === 1 ? "1 lançamento" : `${g.count} lançamentos`}
+                            </p>
                           </div>
                         </div>
                         <div className="finlann-list-item__right">
                           <span className="finlann-list-item__value finlann-list-item__value--negative">
-                            {format(total)}
+                            {format(g.total)}
                           </span>
                         </div>
                       </button>
-                    );
-                  }
-                )}
-
-              {/* Saídas à vista (pix, débito, dinheiro) do mês, agrupadas em um item */}
-              {(() => {
-                const nonCardTotal = financeState.expenses
-                  .filter((e) => {
-                    const createdAt = e.purchaseDate || e.createdAt;
-                    if (!isSameMonthYear(createdAt, currentMonthIndex, currentYear)) {
-                      return false;
-                    }
-                    // tudo que não for crédito em cartão, ou crédito sem cardId
-                    return e.method !== "credit" || !e.cardId;
-                  })
-                  .reduce((acc, e) => acc + Number(e.amount || 0), 0);
-
-                if (!nonCardTotal) return null;
-
-                return (
-                  <div className="finlann-list-item">
-                    <div className="finlann-list-item__left">
-                      <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
-                      <div>
-                        <p className="finlann-list-item__title">Pix, débito e dinheiro</p>
-                        <p className="finlann-list-item__subtitle">Saídas à vista do mês</p>
-                      </div>
-                    </div>
-                    <div className="finlann-list-item__right">
-                      <span className="finlann-list-item__value finlann-list-item__value--negative">
-                        {format(nonCardTotal)}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Seção 1: cartões com fatura em aberto (fatura do mês anterior ainda não quitada) */}
-              {(() => {
-                const today = new Date();
-
-                const anyOpen = financeState.cards.some((card) => {
-                  const cardExpenses = financeState.expenses.filter(
-                    (e) => e.method === "credit" && e.cardId === card.id && e.paid !== true
-                  );
-                  const { total: prevTotal } = computeCardInvoiceItemsForMonth(
-                    cardExpenses,
-                    previousMonthIndex,
-                    previousYear
-                  );
-                  return prevTotal > 0;
-                });
-
-                if (!anyOpen) return null;
-
-                return (
-                  <>
-                    <div className="finlann-list-separator">
-                      <span className="finlann-list-separator__label">
-                        Cartões com fatura em aberto
-                      </span>
-                    </div>
-
-                    {financeState.cards.map((card) => {
-                      const cardExpenses = financeState.expenses.filter(
-                        (e) => e.method === "credit" && e.cardId === card.id && e.paid !== true
-                      );
-                      const { total: prevTotal } = computeCardInvoiceItemsForMonth(
-                        cardExpenses,
-                        previousMonthIndex,
-                        previousYear
-                      );
-
-                      if (prevTotal === 0) return null;
-
-                      const closingDay = card.closingDay;
-                      const dueDay = card.dueDay;
-
-                      const isClosed =
-                        typeof closingDay === "number" && today.getDate() > closingDay;
-                      const isOverdue =
-                        typeof dueDay === "number" && today.getDate() > dueDay;
-
-                      const statusClass = isOverdue
-                        ? "finlann-invoice--overdue" // vencida
-                        : isClosed
-                        ? "finlann-invoice--closed" // fechada
-                        : "finlann-invoice--open"; // ainda em aberto
-
-                      return (
-                        <button
-                          key={`open-${card.id}`}
-                          className={"finlann-list-item " + statusClass}
-                          type="button"
-                          onClick={() => setStatementCard({ card, scope: "previous" })}
-                        >
-                          <div className="finlann-list-item__left">
-                            <span
-                              className="finlann-list-item__avatar finlann-list-item__avatar--credit"
-                              style={{ background: card.color || undefined }}
-                            />
-                            <div>
-                              <p className="finlann-list-item__title">{card.label}</p>
-                              <p className="finlann-list-item__subtitle">Fatura em aberto</p>
-                            </div>
-                          </div>
-                          <div className="finlann-list-item__right">
-                            <span
-                              className={
-                                "finlann-list-item__value " +
-                                (statusClass === "finlann-invoice--overdue"
-                                  ? "finlann-list-item__value--overdue"
-                                  : statusClass === "finlann-invoice--closed"
-                                  ? "finlann-list-item__value--closed"
-                                  : "finlann-list-item__value--open")
-                              }
-                            >
-                              {format(prevTotal)}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-
-                    <div className="finlann-list-separator finlann-list-separator--muted">
-                      <span className="finlann-list-separator__label">
-                        Faturas do mês vigente
-                      </span>
-                    </div>
+                    ))}
                   </>
                 );
               })()}
 
-              {/* Seção 2: todas as faturas do mês vigente (cada cartão uma vez) */}
-              {financeState.cards.map((card) => {
-                const cardExpenses = financeState.expenses.filter(
-                  (e) => e.method === "credit" && e.cardId === card.id
-                );
-                const { total: cardTotal } = computeCardInvoiceItemsForMonth(
-                  cardExpenses,
-                  currentMonthIndex,
-                  currentYear
-                );
+              {/* ────────────────────────────────────────────────────────────
+                  SEÇÃO B · FATURAS ABERTAS (TOPO)
+                  Regra de fechamento (baseada na relação closingDay × dueDay):
+                  · closingDay < dueDay → fechamento e vencimento no MESMO mês calendário
+                    ex: closing=4, due=11 → fatura de março fecha em 4/abril, vence 11/abril
+                  · closingDay > dueDay → fechamento e vencimento em meses DIFERENTES
+                    ex: closing=30, due=11 → fatura de março fecha em 30/março, vence 11/abril
+                  Verificamos SE a fatura de previousMonth JÁ fechou para decidir
+                  qual ciclo está aberto agora.
+                  ──────────────────────────────────────────────────────────── */}
+              {(() => {
 
-                if (cardTotal === 0) return null;
+                // Retorna a data real de fechamento da fatura de monthIdx/year.
+                // cd = closingDay, dd = dueDay (necessário para determinar se fecha no mesmo mês ou no seguinte)
+                // Se closingDay < dueDay → fechamento e vencimento ficam no mesmo mês → fecha em M+1
+                // Se closingDay > dueDay → fechamento e vencimento em meses diferentes → fecha em M
+                function getInvoiceClosingDate(monthIdx, year, cd, dd) {
+                  if (!cd) return null;
+                  if (cd < dd) {
+                    // Fecha no mês seguinte (M+1)
+                    const nm = monthIdx + 1 > 11 ? 0 : monthIdx + 1;
+                    const ny = monthIdx + 1 > 11 ? year + 1 : year;
+                    return new Date(ny, nm, cd);
+                  }
+                  // Fecha no próprio mês (M)
+                  return new Date(year, monthIdx, cd);
+                }
 
-                const today = new Date();
-                const closingDay = card.closingDay;
-                const dueDay = card.dueDay;
+                const openCards = financeState.cards
+                  .map((card) => buildInvoiceCycleEntry(card, currentMonthIndex, currentYear))
+                  .filter((entry) => entry && entry.status === "open");
 
-                const isClosed =
-                  typeof closingDay === "number" && today.getDate() > closingDay;
-                const isOverdue =
-                  typeof dueDay === "number" && today.getDate() > dueDay;
-
-                const statusClass = isOverdue
-                  ? "finlann-invoice--overdue" // vencida
-                  : isClosed
-                  ? "finlann-invoice--closed" // fechada
-                  : "finlann-invoice--open"; // aberta
+                if (openCards.length === 0) return null;
 
                 return (
-                  <button
-                    key={card.id}
-                    className={"finlann-list-item " + statusClass}
-                    type="button"
-                    onClick={() => setStatementCard({ card, scope: "current" })}
-                  >
-                    <div className="finlann-list-item__left">
-                      <span
-                        className="finlann-list-item__avatar finlann-list-item__avatar--credit"
-                        style={{ background: card.color || undefined }}
-                      />
-                      <div>
-                        <p className="finlann-list-item__title">{card.label}</p>
-                        <p className="finlann-list-item__subtitle">Fatura do mês</p>
-                      </div>
+                  <>
+                    <div className="finlann-list-separator">
+                      <span className="finlann-list-separator__label">Faturas abertas</span>
                     </div>
-                    <div className="finlann-list-item__right">
-                      <span
-                        className={
-                          "finlann-list-item__value " +
-                          (statusClass === "finlann-invoice--overdue"
-                            ? "finlann-list-item__value--overdue"
-                            : statusClass === "finlann-invoice--closed"
-                            ? "finlann-list-item__value--closed"
-                            : "finlann-list-item__value--open")
-                        }
+                    {openCards.map(({ card, total, monthIdx, year, referenceLabel, closingLabel, dueLabel }) => (
+                      <button
+                        key={`open-${card.id}-${monthIdx}-${year}`}
+                        type="button"
+                        className="finlann-list-item finlann-invoice--open"
+                        onClick={() => setStatementCard({ card, scope: "open", monthIdx, year })}
                       >
-                        {format(cardTotal)}
+                        <div className="finlann-list-item__left">
+                          <span
+                            className="finlann-list-item__avatar finlann-list-item__avatar--credit"
+                            style={{ background: card.color || undefined }}
+                          />
+                          <div>
+                            <p className="finlann-list-item__title">{card.label}</p>
+                            <p className="finlann-list-item__subtitle">
+                              {referenceLabel} · Fecha {closingLabel || "--/--"}
+                              {dueLabel ? ` · Vence ${dueLabel}` : ""}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="finlann-list-item__right">
+                          <span className="finlann-list-item__value">{format(total)}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                );
+              })()}
+
+              {/* ────────────────────────────────────────────────────────────
+                  SEÇÃO C · FATURAS FECHADAS / ALERTA (BAIXO)
+                  Verifica previousMonthIndex E currentMonthIndex (quando este
+                  também já fechou).
+                  Regra de fechamento/vencimento:
+                  · closingDay < dueDay → fechamento e vencimento no MESMO mês (M+1)
+                  · closingDay > dueDay → fechamento em M, vencimento em M+1
+                  ──────────────────────────────────────────────────────────── */}
+              {(() => {
+                const alertCards = financeState.cards.flatMap((card) => {
+                  const entries = [
+                    buildInvoiceCycleEntry(card, previousMonthIndex, previousYear),
+                    buildInvoiceCycleEntry(card, currentMonthIndex, currentYear),
+                  ];
+
+                  return entries.filter(
+                    (entry) => entry && (entry.status === "closed" || entry.status === "overdue")
+                  );
+                });
+
+                if (alertCards.length === 0) return null;
+
+                return (
+                  <>
+                    <div className="finlann-list-separator">
+                      <span className="finlann-list-separator__label" style={{ color: "#fde047" }}>
+                        Aguardando pagamento
                       </span>
                     </div>
-                  </button>
+                    {alertCards.map(({ card, total, status, closingLabel, dueLabel, referenceLabel, monthIdx, year }) => (
+                      <button
+                        key={`alert-${card.id}-${monthIdx}-${year}`}
+                        type="button"
+                        className={`finlann-list-item ${status === "overdue" ? "finlann-invoice--overdue" : "finlann-invoice--closed"}`}
+                        onClick={() => setStatementCard({ card, scope: "previous", monthIdx, year })}
+                      >
+                        <div className="finlann-list-item__left">
+                          <span
+                            className="finlann-list-item__avatar finlann-list-item__avatar--credit"
+                            style={{ background: card.color || undefined }}
+                          />
+                          <div>
+                            <p className="finlann-list-item__title">{card.label}</p>
+                            <p className="finlann-list-item__subtitle">
+                              {referenceLabel} · {status === "overdue" ? "Venceu" : "Fechou"} {status === "overdue" ? (dueLabel || "--/--") : (closingLabel || "--/--")}
+                              {dueLabel ? ` · Vence ${dueLabel}` : ""}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="finlann-list-item__right">
+                          <span className="finlann-list-item__value">{format(total)}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </>
                 );
-              })}
+              })()}
+
+              {/* Estado vazio */}
+              {financeState.expenses.filter((e) => {
+                const dt = e.purchaseDate || e.createdAt;
+                return isSameMonthYear(dt, currentMonthIndex, currentYear) ||
+                  (e.method === "credit" && e.cardId && e.paid !== true);
+              }).length === 0 && financeState.cards.length === 0 && (
+                <div className="finlann-list-item" style={{ opacity: 0.6 }}>
+                  <div className="finlann-list-item__left">
+                    <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
+                    <div>
+                      <p className="finlann-list-item__title">Nenhuma saída ainda</p>
+                      <p className="finlann-list-item__subtitle">
+                        Registre uma saída para ela aparecer aqui.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <footer className="finlann-modal__footer">
@@ -986,20 +1032,8 @@ export default function Dashboard({
       {statementCard && (
         <CardStatementModal
           card={statementCard.card}
-          currentMonthIndex={(() => {
-            if (statementCard.scope === "previous") {
-              const d = new Date(currentYear, currentMonthIndex - 1, 1);
-              return d.getMonth();
-            }
-            return currentMonthIndex;
-          })()}
-          currentYear={(() => {
-            if (statementCard.scope === "previous") {
-              const d = new Date(currentYear, currentMonthIndex - 1, 1);
-              return d.getFullYear();
-            }
-            return currentYear;
-          })()}
+          currentMonthIndex={statementCard.monthIdx ?? currentMonthIndex}
+          currentYear={statementCard.year ?? currentYear}
           expenses={financeState.expenses.filter(
             (e) => e.method === "credit" && e.cardId === statementCard.card.id
           )}
@@ -1011,6 +1045,8 @@ export default function Dashboard({
           onRemoveExpenses={onRemoveExpenses}
           onTransferExpenses={onTransferExpenses}
           onUpdateExpenses={onUpdateExpenses}
+          onPayInvoice={onPayInvoice}
+          paidInvoices={financeState.paidInvoices || []}
         />
       )}
 
@@ -1038,7 +1074,7 @@ export default function Dashboard({
           </header>
           <div className="finlann-modal__body finlann-modal__body--scroll">
             <div className="finlann-list">
-              {Object.keys(summary.expensesByCategory || {}).length === 0 && (
+              {Object.keys(expensesByCategoryFromEntries || {}).length === 0 && (
                 <div className="finlann-list-item" style={{ opacity: 0.7 }}>
                   <div className="finlann-list-item__left">
                     <span className="finlann-list-item__avatar finlann-list-item__avatar--expense" />
@@ -1052,7 +1088,7 @@ export default function Dashboard({
                 </div>
               )}
 
-              {Object.entries(summary.expensesByCategory || {}).map(
+              {Object.entries(expensesByCategoryFromEntries || {}).map(
                   ([categoryId, total]) => {
                     const label =
                       categoryId === "alimentacao"
@@ -1219,7 +1255,8 @@ export default function Dashboard({
             <h2 className="finlann-modal__title">{categoryStatement.label}</h2>
           </header>
           <div className="finlann-modal__body finlann-modal__body--scroll">
-            <div className="finlann-statement-table finlann-statement-table--category">
+            <div className="finlann-statement-scroll">
+              <div className="finlann-statement-table finlann-statement-table--category">
               <div className="finlann-statement-row finlann-statement-row--header">
                 <span>Data</span>
                 <span>Desc.</span>
@@ -1230,15 +1267,17 @@ export default function Dashboard({
 
               {(() => {
                 const categoryId = categoryStatement.id;
-                const items = [];
+                const items = (financeState.expenses || []).filter((e) => {
+                  const refDate = e.createdAt || e.purchaseDate;
+                  if (!isSameMonthYear(refDate, currentMonthIndex, currentYear)) return false;
+                  return (e.category || "outros") === categoryId;
+                });
 
                 // 1) Cartão (usa competência de fatura)
-                for (const card of financeState.cards) {
-                  const cardExpenses = financeState.expenses.filter(
-                    (e) => e.method === "credit" && e.cardId === card.id
-                  );
-                  const { items: invoiceItems } = computeCardInvoiceItemsForMonth(
-                    cardExpenses,
+                if (false) for (const card of financeState.cards) {
+                  const invoiceItems = getCardInvoiceItemsForMonth(
+                    financeState,
+                    card.id,
                     currentMonthIndex,
                     currentYear
                   );
@@ -1250,12 +1289,22 @@ export default function Dashboard({
                 }
 
                 // 2) À vista (pix, débito, dinheiro, crédito sem cardId)
-                for (const e of financeState.expenses) {
+                if (false) for (const e of financeState.expenses) {
                   if (e.method === "credit" && e.cardId) continue; // já tratado
                   if (e.category !== categoryId) continue;
                   const refDate = e.purchaseDate || e.createdAt;
                   if (!isSameMonthYear(refDate, currentMonthIndex, currentYear)) continue;
                   items.push(e);
+                }
+
+                if (false) {
+                  for (const e of financeState.expenses) {
+                    const refDate = e.purchaseDate || e.createdAt;
+                    if (!isSameMonthYear(refDate, currentMonthIndex, currentYear)) continue;
+                    if (e.method !== methodKey) continue;
+                    if ((categoryStatement.cardId || null) !== (e.cardId || null)) continue;
+                    items.push(e);
+                  }
                 }
 
                 if (items.length === 0) {
@@ -1286,16 +1335,11 @@ export default function Dashboard({
                       ? "–"
                       : `${e.installmentNumber || 1}/${totalInstallments}`;
 
-                  const perInstallmentAmount =
-                    typeof e.installmentAmount === "number"
-                      ? e.installmentAmount
-                      : totalInstallments === 1
-                      ? e.amount
-                      : e.amount / totalInstallments;
+                  const perInstallmentAmount = toMoneyNumber(e.amount);
 
                   let originLabel = "";
                   if (e.method === "credit" || e.method === "debit") {
-                    const card = e._originCard || financeState.cards.find((c) => c.id === e.cardId);
+                    const card = financeState.cards.find((c) => c.id === e.cardId);
                     originLabel = card?.label || (e.method === "credit" ? "Crédito" : "Débito");
                   } else if (e.method === "pix") {
                     originLabel = "Pix";
@@ -1359,6 +1403,7 @@ export default function Dashboard({
                   );
                 });
               })()}
+              </div>
             </div>
           </div>
           <footer className="finlann-modal__footer" style={{ justifyContent: "space-between", alignItems: "center" }}>

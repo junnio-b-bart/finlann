@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import Dashboard from "./screens/Dashboard.jsx";
 import History from "./screens/History.jsx";
 import Settings from "./screens/Settings.jsx";
+import LoginScreen from "./screens/LoginScreen.jsx";
 import BottomNav from "./components/BottomNav.jsx";
 import Toast from "./components/Toast.jsx";
-import { createInitialState, createDemoStateForMonth, addExpense, addCard, updateCard, deleteCard, addIncome, removeExpenses, updateExpenses, removeIncomes, updateIncomes } from "./data/finance.js";
+import { createInitialState, createDemoStateForMonth, addExpense, addCard, updateCard, deleteCard, addIncome, removeExpenses, updateExpenses, removeIncomes, updateIncomes, markInvoicePaid, getFirstInvoiceReferenceForExpense, createInvoicePaymentEntry } from "./data/finance.js";
 import { loadStateFromBackend, saveStateToBackend, subscribeToStateChanges, getCurrentHouseholdId } from "./data/finlannBackendClient.js";
 
 import "./styles/globals.css";
@@ -24,6 +25,17 @@ export default function App() {
   const [pendingRemoteState, setPendingRemoteState] = useState(null); // mantido por enquanto
   const [frame, setFrame] = useState(0); // animação da tela de carregamento
   const [showIntro, setShowIntro] = useState(true); // vinheta de abertura
+
+  // Conta logada: lida do localStorage para não perder ao recarregar
+  const [currentAccount, setCurrentAccount] = useState(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem("finlann.currentAccount");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // household atual (conta logada); usado para amarrar realtime no Supabase
   const householdId = getCurrentHouseholdId();
@@ -114,6 +126,24 @@ export default function App() {
         const amount = parseAmount(payload?.amount);
         if (!amount || !payload?.method) return;
 
+        const referenceCard =
+          payload.method === "credit" && payload.cardId
+            ? financeState?.cards?.find((c) => c.id === payload.cardId) || null
+            : null;
+        const invoiceReference =
+          payload.method === "credit"
+            ? getFirstInvoiceReferenceForExpense(
+                {
+                  purchaseDate: baseDate.toISOString(),
+                  createdAt: baseDate.toISOString(),
+                },
+                referenceCard
+              )
+            : {
+                firstInvoiceMonthIndex: baseDate.getMonth(),
+                firstInvoiceYear: baseDate.getFullYear(),
+              };
+
         const expense = {
           id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
           description: (payload.description || "").trim(),
@@ -122,8 +152,8 @@ export default function App() {
           cardId: payload.method === "credit" ? payload.cardId || null : null,
           totalInstallments: 1,
           purchaseDate: baseDate.toISOString(),
-          firstInvoiceMonthIndex: baseDate.getMonth(),
-          firstInvoiceYear: baseDate.getFullYear(),
+          firstInvoiceMonthIndex: invoiceReference.firstInvoiceMonthIndex,
+          firstInvoiceYear: invoiceReference.firstInvoiceYear,
           createdAt: now.toISOString(),
           updatedAt: now.toISOString(),
         };
@@ -261,6 +291,27 @@ export default function App() {
     setFinanceState((prev) => removeExpenses(prev, expenseIds));
   }
 
+  function handlePayInvoice(cardId, monthIndex, year) {
+    setFinanceState((prev) => {
+      const paymentEntry = createInvoicePaymentEntry(prev, cardId, monthIndex, year);
+      return markInvoicePaid(prev, cardId, monthIndex, year, paymentEntry);
+    });
+    setToast({ message: "Fatura marcada como paga!", kind: "success" });
+  }
+
+  function handleLoginSuccess(account, remoteState) {
+    setCurrentAccount(account);
+    if (remoteState) {
+      setFinanceState(remoteState);
+    }
+    setTab("overview");
+  }
+
+  function handleContinueWithoutAccount() {
+    setCurrentAccount(null); // garante que não há conta logada
+    setTab("overview");
+  }
+
   function handleTransferExpenses(expenseIds, targetCardId) {
     setFinanceState((prev) =>
       updateExpenses(prev, (e) =>
@@ -315,6 +366,20 @@ export default function App() {
     );
   }
 
+  // Se não há conta logada e o boot terminou, mostra a tela de login
+  if (!isBooting && !showIntro && financeState && !currentAccount) {
+    return (
+      <div className="app-root">
+        <div className="app-shell">
+          <LoginScreen
+            onLoginSuccess={handleLoginSuccess}
+            onContinueWithoutAccount={handleContinueWithoutAccount}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-root">
       <div className="app-shell">
@@ -332,6 +397,7 @@ export default function App() {
               onUpdateCard={handleUpdateCard}
               onRemoveExpenses={handleRemoveExpenses}
               onTransferExpenses={handleTransferExpenses}
+              onPayInvoice={handlePayInvoice}
               onUpdateExpenses={(updater) =>
                 setFinanceState((prev) => updateExpenses(prev, updater))
               }

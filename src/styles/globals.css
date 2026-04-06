@@ -42,20 +42,52 @@ body {
   scrollbar-width: none; /* Firefox: sem barra, mas com scroll */
   scrollbar-color: transparent transparent;
 }
-/* Estado visual de faturas no resumo de saídas (apenas borda + cor do valor) */
+/* Estado visual de faturas no resumo de saídas */
 .finlann-invoice--open {
-  border: 1px solid rgba(59, 130, 246, 0.9); /* azul */
+  border: 1px solid rgba(59, 130, 246, 0.55);
   border-radius: 10px;
+  background: rgba(59, 130, 246, 0.06);
 }
 
 .finlann-invoice--closed {
-  border: 1px solid rgba(250, 204, 21, 0.95); /* amarelo */
+  border: 1px solid rgba(250, 204, 21, 0.75);
   border-radius: 10px;
+  background: rgba(250, 204, 21, 0.07);
+}
+.finlann-invoice--closed .finlann-list-item__title,
+.finlann-invoice--closed .finlann-list-item__value {
+  color: #fde047;
+}
+.finlann-invoice--closed .finlann-list-item__subtitle {
+  color: rgba(253, 224, 71, 0.65);
 }
 
 .finlann-invoice--overdue {
-  border: 1px solid rgba(239, 68, 68, 0.95); /* vermelho */
+  border: 1px solid rgba(239, 68, 68, 0.75);
   border-radius: 10px;
+  background: rgba(239, 68, 68, 0.08);
+}
+.finlann-invoice--overdue .finlann-list-item__title,
+.finlann-invoice--overdue .finlann-list-item__value {
+  color: #f87171;
+}
+.finlann-invoice--overdue .finlann-list-item__subtitle {
+  color: rgba(248, 113, 113, 0.65);
+}
+
+/* Fatura futura / próximo ciclo: ainda não abriu, aparece dimmed */
+.finlann-invoice--upcoming {
+  opacity: 0.5;
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  border-radius: 10px;
+  filter: saturate(0.6);
+  transition: opacity 0.2s;
+}
+
+.finlann-invoice--upcoming:hover,
+.finlann-invoice--upcoming:focus {
+  opacity: 0.75;
+  filter: saturate(0.8);
 }
 
 .finlann-list-item__value--open {

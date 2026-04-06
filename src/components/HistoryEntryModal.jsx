@@ -1,4 +1,5 @@
 import Overlay from "./Overlay.jsx";
+import calendarioIcon from "../assets/icons/calendario.png";
 
 function formatCurrency(value) {
   return value.toLocaleString("pt-BR", {
@@ -16,28 +17,61 @@ function formatDateTime(isoString) {
   const year = d.getFullYear();
   const hours = String(d.getHours()).padStart(2, "0");
   const minutes = String(d.getMinutes()).padStart(2, "0");
-  return `${day}/${month}/${year} · ${hours}:${minutes}`;
+  return `${day}/${month}/${year} - ${hours}:${minutes}`;
+}
+
+function getExpenseMethodLabel(origin) {
+  if (origin === "credit") return "Credito";
+  if (origin === "debit") return "Debito";
+  if (origin === "pix") return "Pix";
+  if (origin === "cash") return "Dinheiro";
+  if (origin === "invoice_payment") return "Pagamento de fatura";
+  return origin || "-";
+}
+
+function getExpenseCategoryLabel(categoryId) {
+  if (!categoryId) return "Outros";
+  if (categoryId === "alimentacao") return "Alimentacao";
+  if (categoryId === "carro") return "Carro";
+  if (categoryId === "lazer") return "Lazer";
+  if (categoryId === "compras") return "Compras";
+  if (categoryId === "investimentos") return "Investimentos";
+  if (categoryId === "casa") return "Casa";
+  if (categoryId === "saude") return "Saude";
+  if (categoryId === "outros") return "Outros";
+  return categoryId
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getCategoryTone(categoryId) {
+  if (categoryId === "carro") return "car";
+  if (categoryId === "alimentacao") return "food";
+  if (categoryId === "lazer") return "fun";
+  if (categoryId === "compras") return "shop";
+  if (categoryId === "investimentos") return "invest";
+  if (categoryId === "casa") return "home";
+  if (categoryId === "saude") return "health";
+  return "default";
 }
 
 export default function HistoryEntryModal({ entry, onClose, onEdit, cards = [] }) {
   if (!entry) return null;
 
   const isIncome = entry.kind === "income";
-  const kindLabel = isIncome ? "Entrada" : "Saída";
+  const kindLabel = isIncome ? "Entrada" : "Saida";
+  const card = !isIncome ? cards.find((c) => c.id === entry.cardId) : null;
+  const methodLabel = isIncome ? entry.origin || "-" : getExpenseMethodLabel(entry.origin);
+  const categoryLabel = getExpenseCategoryLabel(entry.category);
+  const categoryTone = getCategoryTone(entry.category);
 
   let accentColor;
-  if (!isIncome) {
-    // Saídas
-    if (entry.origin === "credit") {
-      const card = cards.find((c) => c.id === entry.cardId);
-      if (card?.color) {
-        accentColor = card.color;
-      }
-    }
-    if (!accentColor && (entry.origin === "pix" || entry.origin === "cash")) {
-      // Usa o mesmo padrão verde do modal de saída
-      accentColor = "linear-gradient(to bottom right, #22c55e 0%, #16a34a 40%, #020617 100%)";
-    }
+  if (!isIncome && (entry.origin === "credit" || entry.origin === "invoice_payment")) {
+    accentColor = card?.color;
+  }
+  if (!accentColor && !isIncome && (entry.origin === "pix" || entry.origin === "cash")) {
+    accentColor = "linear-gradient(to bottom right, #22c55e 0%, #16a34a 40%, #020617 100%)";
   }
 
   return (
@@ -46,20 +80,10 @@ export default function HistoryEntryModal({ entry, onClose, onEdit, cards = [] }
       kind={isIncome ? "income" : "expense"}
       accentColor={accentColor}
     >
-      <header className="finlann-modal__header" style={{ alignItems: "stretch" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            width: "100%",
-          }}
-        >
+      <div className="finlann-history-entry">
+        <header className="finlann-history-entry__header">
           <div>
             <p className="finlann-modal__eyebrow">{kindLabel}</p>
-            <h2 className="finlann-modal__title">
-              {entry.description || kindLabel}
-            </h2>
           </div>
           <button
             type="button"
@@ -69,60 +93,69 @@ export default function HistoryEntryModal({ entry, onClose, onEdit, cards = [] }
           >
             ×
           </button>
-        </div>
-      </header>
+        </header>
 
-      <div className="finlann-modal__body" style={{ gap: 8 }}>
-        <div className="finlann-field">
-          <span className="finlann-field__label">Valor</span>
-          <span className="finlann-card__value">
-            {formatCurrency(entry.amount)}
-          </span>
+        <div className="finlann-history-entry__title-row">
+          <span className="finlann-history-entry__icon">✎</span>
+          <h2 className="finlann-history-entry__title">{entry.description || kindLabel}</h2>
         </div>
 
-        <div className="finlann-field">
-          <span className="finlann-field__label">Data e hora</span>
-          <span>{formatDateTime(entry.createdAt)}</span>
-        </div>
-
-        <div style={{ display: "flex", gap: 8 }}>
-          <div className="finlann-field" style={{ flex: 1 }}>
-            <span className="finlann-field__label">
-              {isIncome ? "Origem" : "Método"}
-            </span>
-            <span>
-              {isIncome
-                ? entry.origin || "—"
-                : entry.origin === "credit"
-                ? "Crédito"
-                : entry.origin === "debit"
-                ? "Débito"
-                : entry.origin === "pix"
-                ? "Pix"
-                : entry.origin === "cash"
-                ? "Dinheiro"
-                : entry.origin || "—"}
-            </span>
+        <section className="finlann-history-entry__top-grid">
+          <div className="finlann-history-entry__date-chip">
+            <img src={calendarioIcon} alt="" aria-hidden="true" />
+            <span>{formatDateTime(entry.createdAt).replace(" - ", " • ")}</span>
           </div>
-
-          <div className="finlann-field" style={{ flex: 1 }}>
-            <span className="finlann-field__label">
-              {isIncome ? "Tipo" : "Cartão"}
-            </span>
-            <span>{entry.extra || "—"}</span>
+          <div className="finlann-history-entry__amount">
+            <span className="finlann-field__label">Valor</span>
+            <strong>{formatCurrency(entry.amount)}</strong>
           </div>
-        </div>
+        </section>
+
+        {!isIncome && (
+          <section className="finlann-history-entry__detail-grid">
+            <div className="finlann-history-entry__card">
+              <span className="finlann-field__label">Categoria</span>
+              <div className={`finlann-history-entry__category-pill is-${categoryTone}`}>
+                <span className="finlann-history-entry__category-icon">#</span>
+                <span>{categoryLabel}</span>
+              </div>
+              <small>Classificacao deste gasto</small>
+            </div>
+
+            <div className="finlann-history-entry__card finlann-history-entry__card--payment">
+              <span className="finlann-field__label">Pagamento</span>
+              <div className="finlann-history-entry__payment-box">
+                <div className="finlann-history-entry__payment-main">
+                  <span className="finlann-history-entry__payment-icon">▦</span>
+                  <span>{card?.label || methodLabel}</span>
+                  <span className="finlann-history-entry__payment-chevron">›</span>
+                </div>
+                <span className="finlann-history-entry__payment-tag">{methodLabel}</span>
+              </div>
+              <small>Metodo de pagamento</small>
+            </div>
+          </section>
+        )}
+
+        {entry.note && (
+          <div className="finlann-history-entry__note">
+            <span className="finlann-field__label">Detalhe</span>
+            <span>{entry.note}</span>
+          </div>
+        )}
+
+        <footer className="finlann-history-entry__footer">
+          {!entry.readOnly && (
+            <button
+              type="button"
+              className="finlann-history-entry__edit-btn"
+              onClick={() => onEdit?.(entry)}
+            >
+              Editar lancamento
+            </button>
+          )}
+        </footer>
       </div>
-
-      <footer className="finlann-modal__footer" style={{ justifyContent: "flex-end" }}>
-        <button
-          type="button"
-          className="finlann-modal__primary"
-          onClick={() => onEdit?.(entry)}
-        >
-          Editar
-        </button>
-      </footer>
     </Overlay>
   );
 }

@@ -10,6 +10,7 @@ export function normalizeState(raw) {
       cards: [],
       expenses: [],
       incomes: [],
+      paidInvoices: [],
     };
   }
 
@@ -17,6 +18,7 @@ export function normalizeState(raw) {
     cards: Array.isArray(raw.cards) ? raw.cards : [],
     expenses: Array.isArray(raw.expenses) ? raw.expenses : [],
     incomes: Array.isArray(raw.incomes) ? raw.incomes : [],
+    paidInvoices: Array.isArray(raw.paidInvoices) ? raw.paidInvoices : [],
   };
 }
 
@@ -33,6 +35,7 @@ export function exportState(financeState) {
     cards: normalized.cards,
     expenses: normalized.expenses,
     incomes: normalized.incomes,
+    paidInvoices: normalized.paidInvoices,
   };
 }
 

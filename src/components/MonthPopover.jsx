@@ -24,9 +24,17 @@ export default function MonthPopover({
   onClose,
 }) {
   const [year, setYear] = React.useState(currentYear);
+  const anchorRect = anchor?.current?.getBoundingClientRect?.() || null;
+  const popoverStyle = anchorRect
+    ? {
+        top: Math.round(anchorRect.bottom + 8),
+        left: Math.round(anchorRect.left + anchorRect.width / 2),
+        transform: "translateX(-50%)",
+      }
+    : undefined;
 
   return (
-    <div className="finlann-month-popover" onClick={(e) => e.stopPropagation()}>
+    <div className="finlann-month-popover" style={popoverStyle} onClick={(e) => e.stopPropagation()}>
       <div className="finlann-month-popover__header">
         <button
           type="button"
