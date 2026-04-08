@@ -5,19 +5,22 @@ import Settings from "./screens/Settings.jsx";
 import LoginScreen from "./screens/LoginScreen.jsx";
 import BottomNav from "./components/BottomNav.jsx";
 import Toast from "./components/Toast.jsx";
-import { createInitialState, createDemoStateForMonth, addExpense, addCard, updateCard, deleteCard, addIncome, removeExpenses, updateExpenses, removeIncomes, updateIncomes, markInvoicePaid, getFirstInvoiceReferenceForExpense, createInvoicePaymentEntry } from "./data/finance.js";
-import { loadStateFromBackend, saveStateToBackend, subscribeToStateChanges, getCurrentHouseholdId } from "./data/finlannBackendClient.js";
+import { createInitialState, addExpense, addCard, updateCard, deleteCard, addIncome, removeExpenses, updateExpenses, removeIncomes, updateIncomes, markInvoicePaid, getFirstInvoiceReferenceForExpense, createInvoicePaymentEntry } from "./data/finance.js";
+import { loadStateFromBackend, saveStateToBackend, subscribeToStateChanges } from "./data/finlannBackendClient.js";
 
 import "./styles/globals.css";
 import "./styles/finlann.css";
 import loadingStep1 from "./assets/waitingscreen/progresso empty.png";
 import loadingStep2 from "./assets/waitingscreen/progresso empty (2).png";
-import logoFinlann from "./assets/FinlannLogo.png";
+import logoFinlann from "./assets/logo-f-mark.png";
 
 const STORAGE_KEY = "finlann-state-v1";
+const SESSION_LAST_ACTIVE_KEY = "finlann.session.lastActiveAt";
+const SESSION_TIMEOUT_MS = 60 * 60 * 1000;
 
 export default function App() {
   const [tab, setTab] = useState("overview");
+  const [guestMode, setGuestMode] = useState(false);
   const [settingsView, setSettingsView] = useState("root"); // root | cards | notifications
   const [toast, setToast] = useState(null);
   const [financeState, setFinanceState] = useState(null);
@@ -37,9 +40,6 @@ export default function App() {
     }
   });
 
-  // household atual (conta logada); usado para amarrar realtime no Supabase
-  const householdId = getCurrentHouseholdId();
-
   // Vinheta inicial: mostra sempre que a página é carregada ou recarregada
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -54,33 +54,37 @@ export default function App() {
     return () => clearTimeout(id);
   }, []);
 
-  // Boot inicial: carrega estado do backend (Supabase) ou, se estiver vazio,
-  // injeta um mês de demonstração para facilitar testes (entradas/saídas reais).
+  // Boot inicial:
+  // - com conta: carrega estado da conta no backend (ou estado vazio se for conta nova)
+  // - sem conta: sempre inicia zerado
   useEffect(() => {
     async function boot() {
       try {
-        const remote = await loadStateFromBackend();
+        if (!currentAccount?.user_id) {
+          setFinanceState(createInitialState());
+          return;
+        }
+
+        const remote = await loadStateFromBackend(currentAccount.user_id);
         if (remote && (remote.incomes?.length || remote.expenses?.length || remote.cards?.length)) {
           setFinanceState(remote);
           return;
         }
 
-        const today = new Date();
-        const demo = createDemoStateForMonth(today.getFullYear(), today.getMonth());
-        setFinanceState(demo);
+        const emptyState = createInitialState();
+        setFinanceState(emptyState);
 
-        // se já houver uma conta/household configurado, salva o demo no backend
         try {
-          await saveStateToBackend(demo);
+          await saveStateToBackend(emptyState, currentAccount.user_id);
         } catch (e) {
-          console.warn("[Finlann] Não foi possível salvar estado de demonstração no backend", e);
+          console.warn("[Finlann] Nao foi possivel salvar estado inicial da conta", e);
         }
       } finally {
         setIsBooting(false);
       }
     }
     boot();
-  }, []);
+  }, [currentAccount?.user_id]);
 
   // Migração rápida: garante que não existam despesas duplicadas com o mesmo id
   useEffect(() => {
@@ -205,11 +209,13 @@ export default function App() {
       // silencioso por enquanto
     }
 
+    if (!currentAccount?.user_id) return;
+
     let cancelled = false;
     const timeoutId = setTimeout(async () => {
       if (cancelled) return;
       try {
-        await saveStateToBackend(financeState);
+        await saveStateToBackend(financeState, currentAccount.user_id);
       } catch (e) {
         console.warn("[Finlann] Falha ao salvar automaticamente no backend", e);
       }
@@ -219,7 +225,7 @@ export default function App() {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [financeState]);
+  }, [financeState, currentAccount?.user_id]);
 
   // Auto-clear de toast depois de alguns segundos
   useEffect(() => {
@@ -230,10 +236,76 @@ export default function App() {
     return () => clearTimeout(id);
   }, [toast]);
 
+  // Sessao expira apos 1h com o app em segundo plano
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+
+    const markActive = () => {
+      try {
+        window.localStorage.setItem(SESSION_LAST_ACTIVE_KEY, String(Date.now()));
+      } catch {
+        // ignore
+      }
+    };
+
+    const expireIfNeeded = () => {
+      if (!currentAccount?.user_id) {
+        markActive();
+        return;
+      }
+
+      let lastActive = 0;
+      try {
+        lastActive = Number(window.localStorage.getItem(SESSION_LAST_ACTIVE_KEY) || "0");
+      } catch {
+        lastActive = 0;
+      }
+
+      if (lastActive > 0 && Date.now() - lastActive > SESSION_TIMEOUT_MS) {
+        try {
+          window.localStorage.removeItem("finlann.currentAccount");
+          window.localStorage.removeItem("finlann.householdId");
+        } catch {
+          // ignore
+        }
+        setCurrentAccount(null);
+        setGuestMode(false);
+        setFinanceState(createInitialState());
+        setTab("overview");
+        setToast({ message: "Sessao expirada. Faca login novamente.", kind: "error" });
+        markActive();
+        return;
+      }
+
+      markActive();
+    };
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        markActive();
+        return;
+      }
+      expireIfNeeded();
+    };
+
+    const handleFocus = () => {
+      expireIfNeeded();
+    };
+
+    expireIfNeeded();
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [currentAccount?.user_id]);
+
   // Realtime: escuta atualizações do estado desta conta no Supabase
   useEffect(() => {
     if (!financeState) return;
-    const householdId = getCurrentHouseholdId();
+    const householdId = currentAccount?.user_id;
     if (!householdId) return;
 
     const unsubscribe = subscribeToStateChanges(householdId, (remoteState) => {
@@ -244,7 +316,7 @@ export default function App() {
     });
 
     return () => unsubscribe?.();
-  }, [financeState]);
+  }, [financeState, currentAccount?.user_id]);
 
   // animação da tela de carregamento / vinheta: alterna entre duas imagens
   useEffect(() => {
@@ -301,15 +373,38 @@ export default function App() {
 
   function handleLoginSuccess(account, remoteState) {
     setCurrentAccount(account);
-    if (remoteState) {
-      setFinanceState(remoteState);
-    }
+    setGuestMode(false);
+    setFinanceState(remoteState || createInitialState());
     setTab("overview");
   }
 
   function handleContinueWithoutAccount() {
+    try {
+      window.localStorage.removeItem("finlann.currentAccount");
+      window.localStorage.removeItem("finlann.householdId");
+    } catch {
+      // ignore
+    }
     setCurrentAccount(null); // garante que não há conta logada
+    setGuestMode(true);
+    setFinanceState(createInitialState());
     setTab("overview");
+  }
+
+  function handleLogoutAccount() {
+    try {
+      window.localStorage.removeItem("finlann.currentAccount");
+      window.localStorage.removeItem("finlann.householdId");
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    setCurrentAccount(null);
+    setGuestMode(false);
+    setFinanceState(createInitialState());
+    setTab("overview");
+    setSettingsView("root");
+    setToast({ message: "Sessao encerrada. Faca login novamente.", kind: "success" });
   }
 
   function handleTransferExpenses(expenseIds, targetCardId) {
@@ -367,7 +462,7 @@ export default function App() {
   }
 
   // Se não há conta logada e o boot terminou, mostra a tela de login
-  if (!isBooting && !showIntro && financeState && !currentAccount) {
+  if (!isBooting && !showIntro && financeState && !currentAccount && !guestMode) {
     return (
       <div className="app-root">
         <div className="app-shell">
@@ -434,6 +529,7 @@ export default function App() {
               onSettingsToast={(message, kind = "success") =>
                 setToast({ message, kind })
               }
+              onLogoutAccount={handleLogoutAccount}
             />
           )}
         </main>

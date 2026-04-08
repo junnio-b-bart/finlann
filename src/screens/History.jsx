@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import "../styles/globals.css";
 import "../styles/tokens.css";
 import "../styles/finlann.css";
-import logoFinlann from "../assets/FinlannLogo.png";
+import logoFinlann from "../assets/logo-f-mark.png";
 import calendarioIcon from "../assets/icons/calendario.png";
 import HistoryEntryModal from "../components/HistoryEntryModal.jsx";
 import HistoryEditEntryModal from "../components/HistoryEditEntryModal.jsx";

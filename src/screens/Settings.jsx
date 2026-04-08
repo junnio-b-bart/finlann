@@ -21,6 +21,7 @@ export default function Settings({
   onSyncState,
   onResetState,
   onSettingsToast,
+  onLogoutAccount,
 }) {
   const exported = exportState(financeState);
 
@@ -1175,15 +1176,7 @@ export default function Settings({
                 className="finlann-modal__primary finlann-modal__primary--danger"
                 onClick={() => {
                   setShowLogoutConfirm(false);
-                  onResetState?.();
-                  setAndPersistCurrentAccount(null);
-                  try {
-                    if (typeof window !== "undefined") {
-                      window.localStorage.removeItem("finlann.currentAccount");
-                      window.localStorage.removeItem("finlann.householdId");
-                      window.localStorage.removeItem("finlann-state-v1");
-                    }
-                  } catch {}
+                  onLogoutAccount?.();
                 }}
               >
                 Sair da conta

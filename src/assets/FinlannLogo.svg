@@ -1,0 +1,26 @@
+<svg width="520" height="140" viewBox="0 0 520 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="finlannLogoGradient" x1="20" y1="22" x2="470" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#67E9A6"/>
+      <stop offset="1" stop-color="#149D84"/>
+    </linearGradient>
+  </defs>
+
+  <g fill="url(#finlannLogoGradient)">
+    <rect x="25" y="32" width="66" height="20" rx="7" transform="rotate(-8 25 32)"/>
+    <rect x="22" y="63" width="52" height="20" rx="7" transform="rotate(-8 22 63)"/>
+    <circle cx="28" cy="100" r="8"/>
+  </g>
+
+  <text
+    x="108"
+    y="102"
+    fill="url(#finlannLogoGradient)"
+    font-family="'Avenir Next', 'SF Pro Display', 'Poppins', 'Inter', sans-serif"
+    font-size="86"
+    font-weight="600"
+    letter-spacing="0.2"
+  >
+    Finlann
+  </text>
+</svg>

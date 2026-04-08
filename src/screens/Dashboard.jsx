@@ -9,7 +9,7 @@ import MonthPickerModal from "../components/MonthPickerModal.jsx";
 import MonthPopover from "../components/MonthPopover.jsx";
 import Overlay from "../components/Overlay.jsx";
 import { getMonthlySummary, getCardInvoiceForMonth, getCardInvoiceItemsForMonth, getCardInvoiceCycleDates, isInvoicePaid } from "../data/finance.js";
-import logoFinlann from "../assets/FinlannLogo.png";
+import logoFinlann from "../assets/logo-f-mark.png";
 import calendarioIcon from "../assets/icons/calendario.png";
 
 const MONTH_LABELS = [
