@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import "../styles/globals.css";
 import "../styles/tokens.css";
 import ExpenseModal from "../components/ExpenseModal.jsx";
@@ -95,16 +95,7 @@ export default function Dashboard({
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
 
   const summary = getMonthlySummary(financeState, currentMonthIndex, currentYear);
-  const expensesByCategoryFromEntries = useMemo(() => {
-    const totals = {};
-    for (const expense of financeState.expenses || []) {
-      const refDate = expense.createdAt || expense.purchaseDate;
-      if (!isSameMonthYear(refDate, currentMonthIndex, currentYear)) continue;
-      const categoryKey = expense.category || "outros";
-      totals[categoryKey] = (totals[categoryKey] || 0) + toMoneyNumber(expense.amount);
-    }
-    return totals;
-  }, [financeState.expenses, currentMonthIndex, currentYear]);
+  const expensesByCategoryFromEntries = summary.expensesByCategory || {};
   // Total de saídas exibido no card "Saídas":
   // - inclui as saídas do mês selecionado (cartões + pix + débito + dinheiro);
   // - soma também as faturas em aberto do mês anterior (cartões) que ainda não
@@ -264,7 +255,7 @@ export default function Dashboard({
   }
 
   return (
-    <div className="finlann-dashboard">
+    <div className="finlann-dashboard finlann-dashboard--ambient finlann-dashboard--summary">
       {/* TOPO FIXO: logo + título da página (mês/ano) + cards de resumo */}
       <div className="finlann-dashboard__top">
         <div className="finlann-header-strip">
@@ -273,9 +264,10 @@ export default function Dashboard({
               <div className="finlann-logo-pill">
                 <img
                   src={logoFinlann}
-                  alt="Finlann"
+                  alt=""
                   className="finlann-logo-img"
                 />
+                <span className="finlann-logo-wordmark">Finlann</span>
               </div>
               <button
                 ref={monthTriggerRef}
@@ -612,10 +604,6 @@ export default function Dashboard({
               </div>
           </section>
 
-          {/* Quarta caixa de resumo simples (sem retrátil) */}
-          <section className="finlann-section finlann-section--tall">
-            {/* box de conteúdo simples, sem título/aba ou seta */}
-          </section>
           </div>{/* fim da finlann-summary-inner */}
         </div>{/* fim da finlann-summary-box */}
       </div>
@@ -1267,14 +1255,13 @@ export default function Dashboard({
 
               {(() => {
                 const categoryId = categoryStatement.id;
-                const items = (financeState.expenses || []).filter((e) => {
-                  const refDate = e.createdAt || e.purchaseDate;
-                  if (!isSameMonthYear(refDate, currentMonthIndex, currentYear)) return false;
-                  return (e.category || "outros") === categoryId;
-                });
+                const items = [];
 
-                // 1) Cartão (usa competência de fatura)
-                if (false) for (const card of financeState.cards) {
+                // 1) Cartao (usa competencia de fatura)
+                for (const card of financeState.cards) {
+                  if (isInvoicePaid(financeState, card.id, currentMonthIndex, currentYear)) {
+                    continue;
+                  }
                   const invoiceItems = getCardInvoiceItemsForMonth(
                     financeState,
                     card.id,
@@ -1283,29 +1270,25 @@ export default function Dashboard({
                   );
 
                   for (const e of invoiceItems) {
-                    if (e.category !== categoryId) continue;
-                    items.push({ ...e, _originCard: card });
-                  }
-                }
-
-                // 2) À vista (pix, débito, dinheiro, crédito sem cardId)
-                if (false) for (const e of financeState.expenses) {
-                  if (e.method === "credit" && e.cardId) continue; // já tratado
-                  if (e.category !== categoryId) continue;
-                  const refDate = e.purchaseDate || e.createdAt;
-                  if (!isSameMonthYear(refDate, currentMonthIndex, currentYear)) continue;
-                  items.push(e);
-                }
-
-                if (false) {
-                  for (const e of financeState.expenses) {
-                    const refDate = e.purchaseDate || e.createdAt;
-                    if (!isSameMonthYear(refDate, currentMonthIndex, currentYear)) continue;
-                    if (e.method !== methodKey) continue;
-                    if ((categoryStatement.cardId || null) !== (e.cardId || null)) continue;
+                    if ((e.category || "outros") !== categoryId) continue;
                     items.push(e);
                   }
                 }
+
+                // 2) A vista (pix, debito, dinheiro, credito sem cardId)
+                for (const e of financeState.expenses) {
+                  if (e.method === "credit" && e.cardId) continue; // ja tratado
+                  const refDate = e.purchaseDate || e.createdAt;
+                  if (!isSameMonthYear(refDate, currentMonthIndex, currentYear)) continue;
+                  if ((e.category || "outros") !== categoryId) continue;
+                  items.push(e);
+                }
+
+                items.sort(
+                  (a, b) =>
+                    new Date(b.purchaseDate || b.createdAt) -
+                    new Date(a.purchaseDate || a.createdAt)
+                );
 
                 if (items.length === 0) {
                   return (
@@ -1335,7 +1318,11 @@ export default function Dashboard({
                       ? "–"
                       : `${e.installmentNumber || 1}/${totalInstallments}`;
 
-                  const perInstallmentAmount = toMoneyNumber(e.amount);
+                  const perInstallmentAmount = toMoneyNumber(
+                    typeof e.installmentAmount !== "undefined"
+                      ? e.installmentAmount
+                      : e.amount
+                  );
 
                   let originLabel = "";
                   if (e.method === "credit" || e.method === "debit") {

@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#040A22" />
+      <stop offset="55%" stop-color="#02061A" />
+      <stop offset="100%" stop-color="#010412" />
+    </linearGradient>
+
+    <linearGradient id="lineA" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#18398A" stop-opacity="0.35" />
+      <stop offset="50%" stop-color="#21C9B6" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#6EF7D4" stop-opacity="0.8" />
+    </linearGradient>
+
+    <linearGradient id="lineB" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0D2A66" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#2A7EFF" stop-opacity="0.45" />
+    </linearGradient>
+
+    <linearGradient id="bar" x1="0.5" y1="1" x2="0.5" y2="0">
+      <stop offset="0%" stop-color="#0B2D7D" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#2C72FF" stop-opacity="0.5" />
+    </linearGradient>
+
+    <radialGradient id="glowRight" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#39EFCF" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#39EFCF" stop-opacity="0" />
+    </radialGradient>
+
+    <radialGradient id="glowBottom" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#22E7C6" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#22E7C6" stop-opacity="0" />
+    </radialGradient>
+
+    <radialGradient id="glowLeft" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#2A65FF" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#2A65FF" stop-opacity="0" />
+    </radialGradient>
+
+    <filter id="dotBlur" x="-200%" y="-200%" width="400%" height="400%">
+      <feGaussianBlur stdDeviation="6" />
+    </filter>
+  </defs>
+
+  <rect width="1080" height="1920" fill="url(#bg)" />
+
+  <ellipse cx="1020" cy="700" rx="360" ry="540" fill="url(#glowRight)" />
+  <ellipse cx="180" cy="1760" rx="260" ry="260" fill="url(#glowLeft)" />
+  <ellipse cx="760" cy="1820" rx="460" ry="340" fill="url(#glowBottom)" />
+
+  <g opacity="0.85">
+    <path
+      id="lineAPath"
+      d="M-40 800 C 120 690, 220 950, 360 915 C 520 865, 620 675, 760 705 C 860 735, 940 875, 1120 500"
+      fill="none"
+      stroke="url(#lineA)"
+      stroke-width="5"
+      stroke-linecap="round"
+    />
+
+    <g>
+      <g>
+        <circle cx="0" cy="0" r="28" fill="#65FBE1" opacity="0.25" filter="url(#dotBlur)">
+          <animate
+            attributeName="r"
+            dur="8.6s"
+            repeatCount="indefinite"
+            calcMode="linear"
+            keyTimes="0;0.12;0.28;0.55;0.82;1"
+            values="20;34;18;40;16;46"
+          />
+          <animate
+            attributeName="opacity"
+            dur="8.6s"
+            repeatCount="indefinite"
+            calcMode="linear"
+            keyTimes="0;0.12;0.28;0.55;0.82;1"
+            values="0.14;0.48;0.12;0.55;0.14;0.72"
+          />
+        </circle>
+        <circle cx="0" cy="0" r="14" fill="#6CFBDD">
+          <animate
+            attributeName="r"
+            dur="8.6s"
+            repeatCount="indefinite"
+            calcMode="linear"
+            keyTimes="0;0.12;0.28;0.55;0.82;1"
+            values="11;14;10;15;10;17"
+          />
+          <animate
+            attributeName="opacity"
+            dur="8.6s"
+            repeatCount="indefinite"
+            calcMode="linear"
+            keyTimes="0;0.12;0.28;0.55;0.82;1"
+            values="0.78;0.96;0.72;0.98;0.74;1"
+          />
+        </circle>
+        <animateMotion dur="8.6s" repeatCount="indefinite" rotate="auto">
+          <mpath href="#lineAPath" />
+        </animateMotion>
+      </g>
+    </g>
+  </g>
+
+  <path
+    d="M-30 835 C 140 770, 230 940, 390 925 C 560 910, 680 735, 820 775 C 940 820, 1010 750, 1110 570"
+    fill="none"
+    stroke="url(#lineB)"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    opacity="0.85"
+  />
+
+  <g opacity="0.7">
+    <rect x="850" y="840" width="36" height="110" rx="18" fill="url(#bar)" />
+    <rect x="925" y="805" width="54" height="145" rx="24" fill="url(#bar)" />
+    <rect x="1010" y="760" width="74" height="190" rx="28" fill="url(#bar)" />
+  </g>
+
+  <rect width="1080" height="1920" fill="url(#bg)" opacity="0.08" />
+</svg>

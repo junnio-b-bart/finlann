@@ -8,6 +8,141 @@ import "../styles/tokens.css";
 import "../styles/finlann.css";
 
 const LAST_PROFILE_KEY = "finlann.lastProfile";
+const DEVICE_UNLOCKS_KEY = "finlann.deviceUnlocks";
+const DEVICE_PASSWORDS_KEY = "finlann.deviceUnlockPasswords";
+
+function readStoredJson(key, fallback = null) {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStoredJson(key, value) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
+
+function arrayBufferToBase64Url(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function base64UrlToUint8Array(base64url) {
+  const normalized = base64url.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - (normalized.length % 4 || 4)) % 4);
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function readDeviceUnlockConfig(userId) {
+  if (!userId) return null;
+  const all = readStoredJson(DEVICE_UNLOCKS_KEY, {});
+  return all?.[userId] || null;
+}
+
+function persistDeviceUnlockConfig(userId, config) {
+  if (!userId) return;
+  const all = readStoredJson(DEVICE_UNLOCKS_KEY, {});
+  all[userId] = {
+    enabled: !!config?.enabled,
+    credentialId: config?.credentialId || "",
+    prompted: !!config?.prompted,
+    updatedAt: Date.now(),
+  };
+  writeStoredJson(DEVICE_UNLOCKS_KEY, all);
+}
+
+function isDeviceUnlockEnabled(userId) {
+  const config = readDeviceUnlockConfig(userId);
+  return !!config?.enabled && !!config?.credentialId;
+}
+
+function persistDevicePassword(userId, plainPassword) {
+  if (!userId || !plainPassword) return;
+  const all = readStoredJson(DEVICE_PASSWORDS_KEY, {});
+  all[userId] = plainPassword;
+  writeStoredJson(DEVICE_PASSWORDS_KEY, all);
+}
+
+function readDevicePassword(userId) {
+  if (!userId) return "";
+  const all = readStoredJson(DEVICE_PASSWORDS_KEY, {});
+  return all?.[userId] || "";
+}
+
+async function createDeviceCredentialForUser(userId) {
+  if (!window.isSecureContext || !window.PublicKeyCredential) {
+    throw new Error("DEVICE_UNLOCK_UNAVAILABLE");
+  }
+
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+  const encodedUserId = new TextEncoder().encode(`finlann:${userId}`);
+  const credential = await navigator.credentials.create({
+    publicKey: {
+      challenge,
+      rp: { name: "Finlann" },
+      user: {
+        id: encodedUserId,
+        name: userId,
+        displayName: userId,
+      },
+      pubKeyCredParams: [
+        { type: "public-key", alg: -7 }, // ES256
+        { type: "public-key", alg: -257 }, // RS256
+      ],
+      timeout: 60000,
+      attestation: "none",
+      authenticatorSelection: {
+        authenticatorAttachment: "platform",
+        userVerification: "required",
+        residentKey: "preferred",
+      },
+    },
+  });
+
+  if (!credential?.rawId) {
+    throw new Error("DEVICE_UNLOCK_REGISTER_FAILED");
+  }
+
+  return {
+    credentialId: arrayBufferToBase64Url(credential.rawId),
+  };
+}
+
+async function assertDeviceCredential(credentialId) {
+  if (!window.isSecureContext || !window.PublicKeyCredential) {
+    throw new Error("DEVICE_UNLOCK_UNAVAILABLE");
+  }
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+  const allowId = base64UrlToUint8Array(credentialId);
+  const assertion = await navigator.credentials.get({
+    publicKey: {
+      challenge,
+      timeout: 60000,
+      userVerification: "required",
+      allowCredentials: [{ id: allowId, type: "public-key" }],
+    },
+  });
+  if (!assertion) {
+    throw new Error("DEVICE_UNLOCK_FAILED");
+  }
+}
 
 function readStoredProfile() {
   if (typeof window === "undefined") return null;
@@ -27,6 +162,7 @@ function buildProfile(account) {
     last_name: account.last_name || "",
     has_password: !!account.has_password,
     theme_color: account.theme_color || "#3b82f6",
+    device_unlock_enabled: isDeviceUnlockEnabled(account.user_id),
   };
 }
 
@@ -90,6 +226,9 @@ export default function LoginScreen({ onLoginSuccess, onContinueWithoutAccount }
     ? `${savedProfile.first_name}${savedProfile.last_name ? ` ${savedProfile.last_name}` : ""}`
     : savedProfile?.user_id || "";
   const hasSavedProfile = !!savedProfile?.user_id;
+  const hasDeviceUnlockForSavedProfile = hasSavedProfile
+    ? isDeviceUnlockEnabled(savedProfile.user_id)
+    : false;
   const profileInitials = getProfileInitials(savedProfile);
 
   function resetForm() {
@@ -113,6 +252,110 @@ export default function LoginScreen({ onLoginSuccess, onContinueWithoutAccount }
       setUser(savedProfile.user_id);
     }
     setView(nextView);
+  }
+
+  function goToLoginWithoutPrefill() {
+    resetForm();
+    setView("login");
+  }
+
+  async function maybeOfferDeviceUnlock(account, typedPassword) {
+    if (!account?.user_id) return;
+    const currentConfig = readDeviceUnlockConfig(account.user_id);
+    if (currentConfig?.enabled || currentConfig?.prompted) return;
+
+    const wantsEnable = window.confirm(
+      "Deseja habilitar acesso rapido com Face ID/biometria/senha do aparelho para os proximos logins?"
+    );
+    if (!wantsEnable) {
+      persistDeviceUnlockConfig(account.user_id, {
+        enabled: false,
+        credentialId: "",
+        prompted: true,
+      });
+      return;
+    }
+
+    try {
+      const registration = await createDeviceCredentialForUser(account.user_id);
+      persistDeviceUnlockConfig(account.user_id, {
+        enabled: true,
+        credentialId: registration.credentialId,
+        prompted: true,
+      });
+
+      if (account.has_password && typedPassword) {
+        persistDevicePassword(account.user_id, typedPassword);
+      }
+    } catch (err) {
+      persistDeviceUnlockConfig(account.user_id, {
+        enabled: false,
+        credentialId: "",
+        prompted: true,
+      });
+      if (err?.name === "NotAllowedError") {
+        setError("Habilitacao de desbloqueio cancelada.");
+        return;
+      }
+      if (err?.message === "DEVICE_UNLOCK_UNAVAILABLE") {
+        setError("Desbloqueio do dispositivo nao disponivel neste navegador.");
+        return;
+      }
+      setError("Nao foi possivel habilitar o desbloqueio do dispositivo agora.");
+    }
+  }
+
+  async function tryDeviceUnlockLogin({ fallbackToQuick = false } = {}) {
+    if (!savedProfile?.user_id) return false;
+
+    const config = readDeviceUnlockConfig(savedProfile.user_id);
+    if (!config?.enabled || !config?.credentialId) {
+      setError("Desbloqueio do dispositivo nao habilitado para este perfil.");
+      if (fallbackToQuick) goTo("quick");
+      return false;
+    }
+
+    setLoading(true);
+    setError("");
+    try {
+      await assertDeviceCredential(config.credentialId);
+
+      const localPassword = readDevicePassword(savedProfile.user_id);
+      const account = await loginAccount({
+        user_id: savedProfile.user_id,
+        password: savedProfile.has_password ? localPassword || null : null,
+      });
+      await finalizeLogin(account);
+      return true;
+    } catch (err) {
+      if (err?.name === "NotAllowedError") {
+        setError("Desbloqueio cancelado. Use sua senha ou tente novamente.");
+      } else if (err?.message === "DEVICE_UNLOCK_UNAVAILABLE") {
+        setError("Desbloqueio do dispositivo nao disponivel neste navegador.");
+      } else if (err?.message === "INVALID_CREDENTIALS" && savedProfile.has_password) {
+        setError("Para este perfil, faça login com senha uma vez para habilitar o desbloqueio automatico.");
+      } else {
+        setError("Nao foi possivel entrar com desbloqueio do dispositivo.");
+      }
+      if (fallbackToQuick) goTo("quick");
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleWelcomeEnter() {
+    if (!hasSavedProfile) {
+      goTo("login");
+      return;
+    }
+
+    if (hasDeviceUnlockForSavedProfile) {
+      await tryDeviceUnlockLogin({ fallbackToQuick: true });
+      return;
+    }
+
+    goTo("quick");
   }
 
   async function finalizeLogin(account) {
@@ -142,6 +385,7 @@ export default function LoginScreen({ onLoginSuccess, onContinueWithoutAccount }
     setLoading(true);
     try {
       const account = await loginAccount({ user_id: user.trim(), password: password || null });
+      await maybeOfferDeviceUnlock(account, password || null);
       await finalizeLogin(account);
     } catch (err) {
       if (err?.message === "INVALID_CREDENTIALS") {
@@ -187,22 +431,6 @@ export default function LoginScreen({ onLoginSuccess, onContinueWithoutAccount }
     }
   }
 
-  async function handleDeviceUnlock() {
-    if (!savedProfile?.user_id) return;
-
-    if (!savedProfile.has_password) {
-      await handleQuickUnlock();
-      return;
-    }
-
-    if (!window.isSecureContext || !window.PublicKeyCredential) {
-      setError("Desbloqueio do dispositivo nao disponivel neste navegador. Use sua senha.");
-      return;
-    }
-
-    setError("Desbloqueio do dispositivo ainda nao configurado para esta conta. Use sua senha.");
-  }
-
   async function handleRegister(e) {
     e?.preventDefault();
     setError("");
@@ -237,9 +465,8 @@ export default function LoginScreen({ onLoginSuccess, onContinueWithoutAccount }
         password: hasPassword ? password : null,
         theme_color: themeColor,
       });
-      persistAccount(account);
-      setSavedProfile(buildProfile(account));
-      onLoginSuccess(account, null);
+      await maybeOfferDeviceUnlock(account, hasPassword ? password : null);
+      await finalizeLogin(account);
     } catch (err) {
       console.error("[Finlann] Erro ao criar conta:", err);
       if (err?.code === "23505") {
@@ -256,42 +483,6 @@ export default function LoginScreen({ onLoginSuccess, onContinueWithoutAccount }
   if (view === "welcome") {
     return (
       <div className="finlann-login-screen finlann-login-screen--welcome">
-        <div className="finlann-login-welcome-graph" aria-hidden="true">
-          <svg viewBox="0 0 430 280" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="finlannLoginWaveMain" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#0f3d8f" stopOpacity="0.45" />
-                <stop offset="55%" stopColor="#1cd38f" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#6fffd0" stopOpacity="0.6" />
-              </linearGradient>
-              <linearGradient id="finlannLoginWaveSecondary" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#17306a" stopOpacity="0.45" />
-                <stop offset="100%" stopColor="#2f6bce" stopOpacity="0.3" />
-              </linearGradient>
-              <linearGradient id="finlannLoginBars" x1="0%" y1="100%" x2="0%" y2="0%">
-                <stop offset="0%" stopColor="#102248" stopOpacity="0.1" />
-                <stop offset="100%" stopColor="#2563eb" stopOpacity="0.45" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M -12 215 C 58 165 92 276 154 228 C 212 184 244 142 292 178 C 344 216 372 142 442 74"
-              fill="none"
-              stroke="url(#finlannLoginWaveMain)"
-              strokeWidth="2.1"
-            />
-            <path
-              d="M -10 228 C 44 194 88 256 148 236 C 206 218 246 188 286 206 C 346 238 384 192 440 140"
-              fill="none"
-              stroke="url(#finlannLoginWaveSecondary)"
-              strokeWidth="1.1"
-            />
-            <rect x="337" y="185" width="16" height="60" rx="8" fill="url(#finlannLoginBars)" />
-            <rect x="368" y="166" width="20" height="79" rx="10" fill="url(#finlannLoginBars)" />
-            <rect x="401" y="126" width="24" height="119" rx="12" fill="url(#finlannLoginBars)" />
-            <circle cx="407" cy="114" r="6.2" fill="#78ffd2" />
-          </svg>
-        </div>
-
         <div className="finlann-login-welcome-hero">
           <div className="finlann-login-brand" aria-label="Finlann">
             <img src={logoFinlann} alt="" className="finlann-login-logo finlann-login-logo--welcome" />
@@ -317,6 +508,7 @@ export default function LoginScreen({ onLoginSuccess, onContinueWithoutAccount }
               {hasSavedProfile ? "Perfil salvo" : "Acesso rapido"}
             </span>
 
+            <div className="finlann-login-welcome-card-row">
             <button
               type="button"
               className="finlann-login-welcome-identity"
@@ -336,29 +528,44 @@ export default function LoginScreen({ onLoginSuccess, onContinueWithoutAccount }
             <button
               type="button"
               className="finlann-login-welcome-enter"
-              onClick={() => goTo(hasSavedProfile ? "quick" : "login")}
+              onClick={handleWelcomeEnter}
+              disabled={loading}
             >
-              Entrar agora <span aria-hidden="true">→</span>
+              {loading ? "Entrando..." : <>Entrar agora <span aria-hidden="true">{"\u203A"}</span></>}
             </button>
+            </div>
+
           </section>
 
           <div className="finlann-login-welcome-divider" aria-hidden="true">
             <span>ou</span>
           </div>
 
-          <button
-            type="button"
-            className="finlann-login-welcome-create"
-            onClick={() => goTo("register")}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M11 12.2a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2.2c-4.9 0-8.8 2.4-8.8 5.2a1 1 0 1 0 2 0c0-1.3 2.5-3.2 6.8-3.2 1.7 0 3.1.3 4.2.8a1 1 0 0 0 .9-1.8c-1.4-.7-3.1-1-5.1-1Zm8.6 0h-1.8v-1.8a1 1 0 1 0-2 0v1.8H14a1 1 0 1 0 0 2h1.8v1.8a1 1 0 1 0 2 0v-1.8h1.8a1 1 0 1 0 0-2Z"
-                fill="currentColor"
-              />
-            </svg>
-            <span>Criar conta</span>
-          </button>
+          <div className="finlann-login-welcome-account-row">
+            {hasSavedProfile && (
+              <button
+                type="button"
+                className="finlann-login-welcome-other-account finlann-login-welcome-other-account--row"
+                onClick={goToLoginWithoutPrefill}
+              >
+                Entrar com outra conta
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="finlann-login-welcome-create"
+              onClick={() => goTo("register")}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M11 12.2a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2.2c-4.9 0-8.8 2.4-8.8 5.2a1 1 0 1 0 2 0c0-1.3 2.5-3.2 6.8-3.2 1.7 0 3.1.3 4.2.8a1 1 0 0 0 .9-1.8c-1.4-.7-3.1-1-5.1-1Zm8.6 0h-1.8v-1.8a1 1 0 1 0-2 0v1.8H14a1 1 0 1 0 0 2h1.8v1.8a1 1 0 1 0 2 0v-1.8h1.8a1 1 0 1 0 0-2Z"
+                  fill="currentColor"
+                />
+              </svg>
+              <span>Criar conta</span>
+            </button>
+          </div>
 
           <p className="finlann-login-welcome-security">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -380,9 +587,12 @@ export default function LoginScreen({ onLoginSuccess, onContinueWithoutAccount }
 
   if (view === "quick") {
     return (
-      <div className="finlann-login-screen">
+      <div className="finlann-login-screen finlann-login-screen--quick">
         <div className="finlann-login-logo-area">
-          <img src={logoFinlann} alt="Finlann" className="finlann-login-logo finlann-login-logo--small" />
+          <div className="finlann-login-brand" aria-label="Finlann">
+            <img src={logoFinlann} alt="" className="finlann-login-logo finlann-login-logo--welcome" />
+            <span className="finlann-login-brand__name">Finlann</span>
+          </div>
         </div>
 
         <div className="finlann-login-form-card">
@@ -432,14 +642,6 @@ export default function LoginScreen({ onLoginSuccess, onContinueWithoutAccount }
               {loading ? "Entrando..." : "Entrar"}
             </button>
 
-            <button
-              type="button"
-              className="finlann-login-btn finlann-login-btn--secondary"
-              onClick={handleDeviceUnlock}
-              disabled={loading}
-            >
-              Usar desbloqueio do dispositivo
-            </button>
           </form>
 
           <div className="finlann-login-form-footer">
@@ -450,7 +652,7 @@ export default function LoginScreen({ onLoginSuccess, onContinueWithoutAccount }
         </div>
 
         <button type="button" className="finlann-login-skip" onClick={() => goTo("welcome")}>
-          Voltar
+          <span aria-hidden="true">{"\u2039"} </span>Voltar
         </button>
       </div>
     );

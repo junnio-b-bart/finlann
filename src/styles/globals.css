@@ -132,6 +132,19 @@ body {
   gap: 18px;
 }
 
+.app-shell--ambient {
+  background: #010412 url("../assets/summary-background-v1.svg") center center / cover no-repeat;
+}
+
+.app-shell--auth {
+  width: 100vw;
+  max-width: 100vw;
+  min-height: 100dvh;
+  padding: 0;
+  gap: 0;
+  background: #010412 url("../assets/login-background.svg") center center / cover no-repeat;
+}
+
 main {
   flex: 1;
   display: flex;
@@ -177,6 +190,16 @@ main {
     max-width: 100vw;
     padding: 10px 10px 120px; /* pequeno respiro no topo para evitar linha cinza encostada no conteúdo no iPhone */
     gap: 10px;
+  }
+
+  .app-shell--overview {
+    padding: 0 0 120px;
+    gap: 0;
+  }
+
+  .app-shell--auth {
+    padding: 0;
+    gap: 0;
   }
 
   /* Logo um pouco menor no mobile pra reduzir a sensação de zoom */

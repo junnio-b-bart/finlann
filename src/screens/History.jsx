@@ -138,7 +138,7 @@ export default function History({ financeState, onUpdateIncomes, onUpdateExpense
   const selectedMonthLabel = `${MONTH_LABELS[selectedMonthIndex]} · ${selectedYear}`;
 
   return (
-    <div className="finlann-dashboard">
+    <div className="finlann-dashboard finlann-dashboard--history finlann-dashboard--ambient">
       <div className="finlann-dashboard__top">
         <div className="finlann-header-strip">
           <header className="finlann-header finlann-header--centered">
@@ -146,9 +146,10 @@ export default function History({ financeState, onUpdateIncomes, onUpdateExpense
               <div className="finlann-logo-pill">
                 <img
                   src={logoFinlann}
-                  alt="Finlann"
+                  alt=""
                   className="finlann-logo-img"
                 />
+                <span className="finlann-logo-wordmark">Finlann</span>
               </div>
               <button
                 ref={monthTriggerRef}

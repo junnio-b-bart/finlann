@@ -10,6 +10,8 @@ import { exportState, normalizeState } from "../data/finance.sync.js";
 import { createAccount, loginAccount, loadStateFromBackend, saveStateToBackend, updateAccount } from "../data/finlannBackendClient.js";
 import SettingsCards from "./SettingsCards.jsx";
 import SettingsNotifications from "./SettingsNotifications.jsx";
+import InvoicePdfImportModal from "../components/InvoicePdfImportModal.jsx";
+import InvoiceImageImportModal from "../components/InvoiceImageImportModal.jsx";
 
 export default function Settings({
   financeState,
@@ -21,11 +23,14 @@ export default function Settings({
   onSyncState,
   onResetState,
   onSettingsToast,
+  onImportExpenses,
   onLogoutAccount,
 }) {
   const exported = exportState(financeState);
 
   const [showEraseModal, setShowEraseModal] = useState(false);
+  const [showInvoiceImportModal, setShowInvoiceImportModal] = useState(false);
+  const [showInvoiceImageImportModal, setShowInvoiceImageImportModal] = useState(false);
   const [eraseConfirmation, setEraseConfirmation] = useState("");
 
   // Modal de conta Finlann
@@ -207,15 +212,18 @@ export default function Settings({
   }
 
   return (
-    <div className="finlann-dashboard">
-      <div className="finlann-header-strip">
-        <header className="finlann-header finlann-header--centered">
-          <div className="finlann-header__left" style={{ paddingTop: 8 }}>
-            <h1 className="finlann-section__title">Configurações</h1>
-          </div>
-        </header>
+    <div className="finlann-dashboard finlann-dashboard--settings">
+      <div className="finlann-dashboard__top">
+        <div className="finlann-header-strip">
+          <header className="finlann-header finlann-header--centered">
+            <div className="finlann-header__left" style={{ paddingTop: 8 }}>
+              <h1 className="finlann-section__title">Configurações</h1>
+            </div>
+          </header>
+        </div>
       </div>
 
+      <div className="finlann-dashboard__scroll finlann-dashboard__scroll--settings">
       {/* Card de Conta Finlann (sem Google) */}
       <section className="finlann-section">
         <header className="finlann-section__header">
@@ -359,6 +367,36 @@ export default function Settings({
               </div>
             </div>
           </button>
+
+          <button
+            type="button"
+            className="finlann-list-item"
+            onClick={() => setShowInvoiceImportModal(true)}
+          >
+            <div className="finlann-list-item__left">
+              <div>
+                <p className="finlann-list-item__title">Importar fatura em PDF</p>
+                <p className="finlann-list-item__subtitle">
+                  Leia o PDF, marque os itens com checkbox e importe so o que for seu.
+                </p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            className="finlann-list-item"
+            onClick={() => setShowInvoiceImageImportModal(true)}
+          >
+            <div className="finlann-list-item__left">
+              <div>
+                <p className="finlann-list-item__title">Importar fatura por foto</p>
+                <p className="finlann-list-item__subtitle">
+                  Envie fotos da fatura, revise os itens com checkbox e importe apenas o que for seu.
+                </p>
+              </div>
+            </div>
+          </button>
         </div>
       </section>
 
@@ -385,6 +423,25 @@ export default function Settings({
           </button>
         </div>
       </section>
+      </div>
+
+      {showInvoiceImportModal && (
+        <InvoicePdfImportModal
+          cards={financeState?.cards || []}
+          onClose={() => setShowInvoiceImportModal(false)}
+          onImportExpenses={onImportExpenses}
+          onSettingsToast={onSettingsToast}
+        />
+      )}
+
+      {showInvoiceImageImportModal && (
+        <InvoiceImageImportModal
+          cards={financeState?.cards || []}
+          onClose={() => setShowInvoiceImageImportModal(false)}
+          onImportExpenses={onImportExpenses}
+          onSettingsToast={onSettingsToast}
+        />
+      )}
 
       {showEraseModal && (
         <div className="finlann-overlay">

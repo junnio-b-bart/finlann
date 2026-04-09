@@ -16,6 +16,7 @@ import logoFinlann from "./assets/logo-f-mark.png";
 
 const STORAGE_KEY = "finlann-state-v1";
 const SESSION_LAST_ACTIVE_KEY = "finlann.session.lastActiveAt";
+const LAST_PROFILE_KEY = "finlann.lastProfile";
 const SESSION_TIMEOUT_MS = 60 * 60 * 1000;
 
 export default function App() {
@@ -26,10 +27,10 @@ export default function App() {
   const [financeState, setFinanceState] = useState(null);
   const [isBooting, setIsBooting] = useState(true);
   const [pendingRemoteState, setPendingRemoteState] = useState(null); // mantido por enquanto
-  const [frame, setFrame] = useState(0); // animação da tela de carregamento
+  const [frame, setFrame] = useState(0); // animaÃ§Ã£o da tela de carregamento
   const [showIntro, setShowIntro] = useState(true); // vinheta de abertura
 
-  // Conta logada: lida do localStorage para não perder ao recarregar
+  // Conta logada: lida do localStorage para nÃ£o perder ao recarregar
   const [currentAccount, setCurrentAccount] = useState(() => {
     if (typeof window === "undefined") return null;
     try {
@@ -40,7 +41,7 @@ export default function App() {
     }
   });
 
-  // Vinheta inicial: mostra sempre que a página é carregada ou recarregada
+  // Vinheta inicial: mostra sempre que a pÃ¡gina Ã© carregada ou recarregada
   useEffect(() => {
     if (typeof window === "undefined") {
       setShowIntro(false);
@@ -86,7 +87,7 @@ export default function App() {
     boot();
   }, [currentAccount?.user_id]);
 
-  // Migração rápida: garante que não existam despesas duplicadas com o mesmo id
+  // MigraÃ§Ã£o rÃ¡pida: garante que nÃ£o existam despesas duplicadas com o mesmo id
   useEffect(() => {
     setFinanceState((prev) => {
       if (!prev || !Array.isArray(prev?.expenses)) return prev;
@@ -103,7 +104,7 @@ export default function App() {
   }, []);
 
   // Pequena camada de comandos internos para permitir que o agente
-  // registre entradas/saídas "por trás" do app (sem digitar no browser).
+  // registre entradas/saÃ­das "por trÃ¡s" do app (sem digitar no browser).
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -162,7 +163,7 @@ export default function App() {
           updatedAt: now.toISOString(),
         };
         setFinanceState((prev) => addExpense(prev, expense));
-        setToast({ message: "Saída registrada com sucesso.", kind: "success" });
+        setToast({ message: "SaÃ­da registrada com sucesso.", kind: "success" });
         return;
       }
 
@@ -185,7 +186,7 @@ export default function App() {
         return;
       }
 
-      // futuros comandos (editar lançamento, etc.) podem ser adicionados aqui.
+      // futuros comandos (editar lanÃ§amento, etc.) podem ser adicionados aqui.
     };
 
     return () => {
@@ -199,7 +200,7 @@ export default function App() {
     };
   }, []);
 
-  // Persistência local + autosave no backend para o household atual
+  // PersistÃªncia local + autosave no backend para o household atual
   useEffect(() => {
     if (!financeState) return;
 
@@ -219,7 +220,7 @@ export default function App() {
       } catch (e) {
         console.warn("[Finlann] Falha ao salvar automaticamente no backend", e);
       }
-    }, 150); // autosave mais rápido para sincronização quase imediata
+    }, 150); // autosave mais rÃ¡pido para sincronizaÃ§Ã£o quase imediata
 
     return () => {
       cancelled = true;
@@ -302,7 +303,7 @@ export default function App() {
     };
   }, [currentAccount?.user_id]);
 
-  // Realtime: escuta atualizações do estado desta conta no Supabase
+  // Realtime: escuta atualizaÃ§Ãµes do estado desta conta no Supabase
   useEffect(() => {
     if (!financeState) return;
     const householdId = currentAccount?.user_id;
@@ -318,9 +319,9 @@ export default function App() {
     return () => unsubscribe?.();
   }, [financeState, currentAccount?.user_id]);
 
-  // animação da tela de carregamento / vinheta: alterna entre duas imagens
+  // animaÃ§Ã£o da tela de carregamento / vinheta: alterna entre duas imagens
   useEffect(() => {
-    if (!showIntro && !isBooting && financeState) return; // só anima enquanto está na intro ou carregando
+    if (!showIntro && !isBooting && financeState) return; // sÃ³ anima enquanto estÃ¡ na intro ou carregando
 
     const id = setInterval(() => {
       setFrame((prev) => (prev === 0 ? 1 : 0));
@@ -331,7 +332,68 @@ export default function App() {
 
   function handleAddExpense(expense) {
     setFinanceState((prev) => addExpense(prev, expense));
-    setToast({ message: "Saída registrada com sucesso.", kind: "success" });
+    setToast({ message: "Saida registrada com sucesso.", kind: "success" });
+  }
+
+  function handleImportExpenses(expensesToImport) {
+    if (!Array.isArray(expensesToImport) || expensesToImport.length === 0) {
+      return { added: 0, skipped: 0 };
+    }
+
+    const toSignature = (expense) => {
+      const dateRaw = expense.purchaseDate || expense.createdAt;
+      const date = dateRaw ? new Date(dateRaw) : null;
+      const dateKey =
+        date && !Number.isNaN(date.getTime())
+          ? date.toISOString().slice(0, 10)
+          : "";
+      const amount = Number(expense.amount || 0);
+      const normalizedAmount = Number.isFinite(amount) ? amount.toFixed(2) : "0.00";
+
+      return [
+        expense.method || "",
+        expense.cardId || "",
+        (expense.description || "").trim().toLowerCase(),
+        normalizedAmount,
+        String(expense.totalInstallments || 1),
+        dateKey,
+      ].join("|");
+    };
+
+    let added = 0;
+    let skipped = 0;
+
+    setFinanceState((prev) => {
+      const current = Array.isArray(prev?.expenses) ? prev.expenses : [];
+      const signatures = new Set(current.map((expense) => toSignature(expense)));
+      const merged = [...current];
+
+      for (const expense of expensesToImport) {
+        const signature = toSignature(expense);
+        if (signatures.has(signature)) {
+          skipped += 1;
+          continue;
+        }
+        signatures.add(signature);
+        merged.push(expense);
+        added += 1;
+      }
+
+      if (added === 0) return prev;
+      return {
+        ...prev,
+        expenses: merged,
+      };
+    });
+
+    if (added > 0) {
+      const label = added === 1 ? "lancamento importado" : "lancamentos importados";
+      setToast({ message: `${added} ${label} da fatura.`, kind: "success" });
+    } else {
+      setToast({ message: "Nenhum novo lancamento para importar.", kind: "error" });
+    }
+
+    return { added, skipped };
   }
 
   function handleAddIncome(income) {
@@ -385,13 +447,30 @@ export default function App() {
     } catch {
       // ignore
     }
-    setCurrentAccount(null); // garante que não há conta logada
+    setCurrentAccount(null); // garante que nÃ£o hÃ¡ conta logada
     setGuestMode(true);
     setFinanceState(createInitialState());
     setTab("overview");
   }
 
   function handleLogoutAccount() {
+    if (currentAccount?.user_id) {
+      try {
+        window.localStorage.setItem(
+          LAST_PROFILE_KEY,
+          JSON.stringify({
+            user_id: currentAccount.user_id || "",
+            first_name: currentAccount.first_name || "",
+            last_name: currentAccount.last_name || "",
+            has_password: !!currentAccount.has_password,
+            theme_color: currentAccount.theme_color || "#3b82f6",
+          })
+        );
+      } catch {
+        // ignore
+      }
+    }
+
     try {
       window.localStorage.removeItem("finlann.currentAccount");
       window.localStorage.removeItem("finlann.householdId");
@@ -417,7 +496,7 @@ export default function App() {
     );
   }
 
-  // Vinheta de abertura: mostra só quando o app é aberto de novo na sessão
+  // Vinheta de abertura: mostra sÃ³ quando o app Ã© aberto de novo na sessÃ£o
   if (showIntro) {
     const currentImage = frame === 0 ? loadingStep1 : loadingStep2;
 
@@ -439,7 +518,7 @@ export default function App() {
     );
   }
 
-  // Tela de carregamento enquanto os dados ainda não chegaram
+  // Tela de carregamento enquanto os dados ainda nÃ£o chegaram
   if (isBooting || !financeState) {
     const currentImage = frame === 0 ? loadingStep1 : loadingStep2;
 
@@ -461,11 +540,11 @@ export default function App() {
     );
   }
 
-  // Se não há conta logada e o boot terminou, mostra a tela de login
+  // Se nÃ£o hÃ¡ conta logada e o boot terminou, mostra a tela de login
   if (!isBooting && !showIntro && financeState && !currentAccount && !guestMode) {
     return (
       <div className="app-root">
-        <div className="app-shell">
+        <div className="app-shell app-shell--auth">
           <LoginScreen
             onLoginSuccess={handleLoginSuccess}
             onContinueWithoutAccount={handleContinueWithoutAccount}
@@ -477,7 +556,15 @@ export default function App() {
 
   return (
     <div className="app-root">
-      <div className="app-shell">
+      <div
+        className={[
+          "app-shell",
+          "app-shell--ambient",
+          tab === "overview" ? "app-shell--overview" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
         <main>
           {toast && <Toast message={toast.message} kind={toast.kind} />}
 
@@ -529,6 +616,7 @@ export default function App() {
               onSettingsToast={(message, kind = "success") =>
                 setToast({ message, kind })
               }
+              onImportExpenses={handleImportExpenses}
               onLogoutAccount={handleLogoutAccount}
             />
           )}
@@ -547,3 +635,4 @@ export default function App() {
     </div>
   );
 }
+

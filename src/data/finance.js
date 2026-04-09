@@ -710,7 +710,7 @@ export function getMonthlySummary(state, monthIndex, year) {
   // lógica de fatura do mês (por competência da fatura).
 
   // 1) Saídas em cartão (competência de fatura)
-  for (const card of []) {
+  for (const card of state.cards) {
     if (isInvoicePaid(state, card.id, monthIndex, year)) continue;
     const items = getCardInvoiceItemsForMonth(state, card.id, monthIndex, year);
 
@@ -726,6 +726,7 @@ export function getMonthlySummary(state, monthIndex, year) {
   for (const e of state.expenses) {
     const createdAt = e.purchaseDate || e.createdAt;
     if (!isSameMonthYear(createdAt, monthIndex, year)) continue;
+    if (e.method === "credit" && e.cardId) continue; // ja contabilizado por fatura
 
     const categoryKey = e.category || "outros";
     const value = toMoneyNumber(e.amount);
