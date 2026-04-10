@@ -2398,8 +2398,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  min-height: calc(100dvh - 64px);
-  padding: 48px 24px 32px;
+  min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top, 0px) + 34px) 24px calc(env(safe-area-inset-bottom, 0px) + 32px);
   gap: 32px;
   text-align: center;
 }
@@ -2407,19 +2407,19 @@
 .finlann-login-screen--register {
   justify-content: flex-start;
   overflow-y: auto;
-  padding-top: 24px;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
 }
 
 .finlann-login-screen--quick {
   justify-content: flex-start;
   gap: 18px;
   min-height: 100dvh;
-  padding-top: 24px;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
 }
 
 .finlann-login-screen--quick .finlann-login-logo-area {
   width: 100%;
-  margin-top: 32px;
+  margin-top: 22px;
 }
 
 .finlann-login-logo-area {
@@ -2451,7 +2451,7 @@
   align-items: stretch;
   text-align: left;
   min-height: 100dvh;
-  padding: 24px 18px 26px;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px calc(env(safe-area-inset-bottom, 0px) + 26px);
   gap: 16px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -2840,17 +2840,17 @@
   .finlann-login-screen--welcome {
     min-height: 100dvh;
     border-radius: 0;
-    padding: 20px 16px 20px;
+    padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
   }
 
   .finlann-login-screen--quick {
     min-height: 100dvh;
-    padding-top: 20px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
     gap: 14px;
   }
 
   .finlann-login-screen--quick .finlann-login-logo-area {
-    margin-top: 24px;
+    margin-top: 18px;
   }
 
   .finlann-login-logo--welcome {
@@ -2867,7 +2867,7 @@
 
   .finlann-login-welcome-hero {
     gap: 12.1px;
-    margin-top: 26px;
+    margin-top: 18px;
     margin-bottom: 150px;
   }
 

@@ -14,6 +14,7 @@ import logoFinlann from "./assets/logo-f-mark.png";
 
 const STORAGE_KEY = "finlann-state-v1";
 const SESSION_LAST_ACTIVE_KEY = "finlann.session.lastActiveAt";
+const SESSION_BACKGROUND_AT_KEY = "finlann.session.backgroundAt";
 const LAST_PROFILE_KEY = "finlann.lastProfile";
 const SESSION_TIMEOUT_MS = 60 * 60 * 1000;
 
@@ -246,23 +247,42 @@ export default function App() {
       }
     };
 
+    const markBackgroundStart = () => {
+      try {
+        window.localStorage.setItem(SESSION_BACKGROUND_AT_KEY, String(Date.now()));
+      } catch {
+        // ignore
+      }
+    };
+
+    const clearBackgroundStart = () => {
+      try {
+        window.localStorage.removeItem(SESSION_BACKGROUND_AT_KEY);
+      } catch {
+        // ignore
+      }
+    };
+
     const expireIfNeeded = () => {
       if (!currentAccount?.user_id) {
+        clearBackgroundStart();
         markActive();
         return;
       }
 
-      let lastActive = 0;
+      let backgroundAt = 0;
       try {
-        lastActive = Number(window.localStorage.getItem(SESSION_LAST_ACTIVE_KEY) || "0");
+        backgroundAt = Number(window.localStorage.getItem(SESSION_BACKGROUND_AT_KEY) || "0");
       } catch {
-        lastActive = 0;
+        backgroundAt = 0;
       }
 
-      if (lastActive > 0 && Date.now() - lastActive > SESSION_TIMEOUT_MS) {
+      if (backgroundAt > 0 && Date.now() - backgroundAt > SESSION_TIMEOUT_MS) {
+        persistLastProfile(currentAccount);
         try {
           window.localStorage.removeItem("finlann.currentAccount");
           window.localStorage.removeItem("finlann.householdId");
+          window.localStorage.removeItem(SESSION_BACKGROUND_AT_KEY);
         } catch {
           // ignore
         }
@@ -275,12 +295,13 @@ export default function App() {
         return;
       }
 
+      clearBackgroundStart();
       markActive();
     };
 
     const handleVisibility = () => {
       if (document.hidden) {
-        markActive();
+        markBackgroundStart();
         return;
       }
       expireIfNeeded();
@@ -290,13 +311,19 @@ export default function App() {
       expireIfNeeded();
     };
 
+    const handlePageHide = () => {
+      markBackgroundStart();
+    };
+
     expireIfNeeded();
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("focus", handleFocus);
+    window.addEventListener("pagehide", handlePageHide);
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("pagehide", handlePageHide);
     };
   }, [currentAccount?.user_id]);
 
@@ -418,7 +445,36 @@ export default function App() {
     setToast({ message: "Fatura marcada como paga!", kind: "success" });
   }
 
+  function persistLastProfile(account) {
+    if (!account?.user_id || typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        LAST_PROFILE_KEY,
+        JSON.stringify({
+          user_id: account.user_id || "",
+          first_name: account.first_name || "",
+          last_name: account.last_name || "",
+          has_password: !!account.has_password,
+          theme_color: account.theme_color || "#3b82f6",
+        })
+      );
+    } catch {
+      // ignore
+    }
+  }
+
   function handleLoginSuccess(account, remoteState) {
+    persistLastProfile(account);
+    try {
+      window.localStorage.setItem("finlann.currentAccount", JSON.stringify(account));
+      if (account?.user_id) {
+        window.localStorage.setItem("finlann.householdId", account.user_id);
+      }
+      window.localStorage.setItem(SESSION_LAST_ACTIVE_KEY, String(Date.now()));
+      window.localStorage.removeItem(SESSION_BACKGROUND_AT_KEY);
+    } catch {
+      // ignore
+    }
     setCurrentAccount(account);
     setGuestMode(false);
     setFinanceState(remoteState || createInitialState());
@@ -429,6 +485,7 @@ export default function App() {
     try {
       window.localStorage.removeItem("finlann.currentAccount");
       window.localStorage.removeItem("finlann.householdId");
+      window.localStorage.removeItem(SESSION_BACKGROUND_AT_KEY);
     } catch {
       // ignore
     }
@@ -439,27 +496,13 @@ export default function App() {
   }
 
   function handleLogoutAccount() {
-    if (currentAccount?.user_id) {
-      try {
-        window.localStorage.setItem(
-          LAST_PROFILE_KEY,
-          JSON.stringify({
-            user_id: currentAccount.user_id || "",
-            first_name: currentAccount.first_name || "",
-            last_name: currentAccount.last_name || "",
-            has_password: !!currentAccount.has_password,
-            theme_color: currentAccount.theme_color || "#3b82f6",
-          })
-        );
-      } catch {
-        // ignore
-      }
-    }
+    persistLastProfile(currentAccount);
 
     try {
       window.localStorage.removeItem("finlann.currentAccount");
       window.localStorage.removeItem("finlann.householdId");
       window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(SESSION_BACKGROUND_AT_KEY);
     } catch {
       // ignore
     }
@@ -485,7 +528,7 @@ export default function App() {
   if (showIntro) {
 
     return (
-      <div className="app-root">
+      <div className="app-root app-root--immersive">
         <div className="app-shell app-shell--loading">
           <main className="finlann-loading-screen">
             <div className="finlann-loading-brand" aria-label="Finlann">
@@ -502,7 +545,7 @@ export default function App() {
   if (isBooting || !financeState) {
 
     return (
-      <div className="app-root">
+      <div className="app-root app-root--immersive">
         <div className="app-shell app-shell--loading">
           <main className="finlann-loading-screen">
             <div className="finlann-loading-brand" aria-label="Finlann">
@@ -518,7 +561,7 @@ export default function App() {
   // Se nÃ£o hÃ¡ conta logada e o boot terminou, mostra a tela de login
   if (!isBooting && !showIntro && financeState && !currentAccount && !guestMode) {
     return (
-      <div className="app-root">
+      <div className="app-root app-root--immersive">
         <div className="app-shell app-shell--auth">
           <LoginScreen
             onLoginSuccess={handleLoginSuccess}

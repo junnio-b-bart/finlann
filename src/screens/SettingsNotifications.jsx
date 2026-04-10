@@ -13,6 +13,8 @@ const DEFAULT_PREFS = {
   limitAlert: { enabled: false, threshold: 80 },
 };
 
+const APP_ICON_URL = `${import.meta.env.BASE_URL}finlann-icon.png`;
+
 function loadPrefs() {
   try {
     const raw = localStorage.getItem(PREFS_KEY);
@@ -41,7 +43,7 @@ function fireTestNotification() {
   if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
   new Notification("Finlann · Teste", {
     body: "Suas notificações estão funcionando corretamente.",
-    icon: "/favicon.ico",
+    icon: APP_ICON_URL,
   });
 }
 
@@ -417,3 +419,4 @@ export default function SettingsNotifications({ onBack }) {
     </div>
   );
 }
+
