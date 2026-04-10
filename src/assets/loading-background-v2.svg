@@ -1,0 +1,51 @@
+<svg width="1440" height="2960" viewBox="0 0 1440 2960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgBase" x1="0" y1="0" x2="1440" y2="2960" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#020726"/>
+      <stop offset="0.58" stop-color="#01041C"/>
+      <stop offset="1" stop-color="#010214"/>
+    </linearGradient>
+
+    <radialGradient id="auroraTopRight" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1170 840) rotate(134) scale(940 760)">
+      <stop stop-color="#22D3B6" stop-opacity="0.42"/>
+      <stop offset="0.5" stop-color="#22D3B6" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#22D3B6" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="auroraBottom" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(820 2710) rotate(-90) scale(520 760)">
+      <stop stop-color="#14B8A6" stop-opacity="0.3"/>
+      <stop offset="0.45" stop-color="#14B8A6" stop-opacity="0.09"/>
+      <stop offset="1" stop-color="#14B8A6" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="flowMain" x1="30" y1="2010" x2="1450" y2="1140" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F6BC2" stop-opacity="0.16"/>
+      <stop offset="0.52" stop-color="#26C4B4" stop-opacity="0.86"/>
+      <stop offset="1" stop-color="#72F0CA" stop-opacity="0.8"/>
+    </linearGradient>
+
+    <linearGradient id="flowSecondary" x1="-60" y1="2120" x2="1450" y2="1310" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F6BC2" stop-opacity="0.08"/>
+      <stop offset="0.54" stop-color="#2A78D6" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#2AC5D4" stop-opacity="0.3"/>
+    </linearGradient>
+
+    <pattern id="microGrid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M24 0H0V24" stroke="#1E3A8A" stroke-opacity="0.08" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1440" height="2960" fill="url(#bgBase)"/>
+  <rect width="1440" height="2960" fill="url(#microGrid)"/>
+  <rect width="1440" height="2960" fill="url(#auroraTopRight)"/>
+  <rect width="1440" height="2960" fill="url(#auroraBottom)"/>
+
+  <path d="M-70 1934C204 1834 360 2116 620 1984C888 1847 1048 1370 1308 1484C1438 1540 1512 1438 1570 1296" stroke="url(#flowMain)" stroke-width="10" stroke-linecap="round"/>
+  <path d="M-80 2050C242 1972 438 2212 716 2092C990 1973 1144 1548 1390 1650C1498 1694 1562 1618 1636 1508" stroke="url(#flowSecondary)" stroke-width="6" stroke-linecap="round"/>
+
+  <rect x="1180" y="1300" width="88" height="208" rx="44" fill="url(#flowSecondary)" fill-opacity="0.36"/>
+  <rect x="1292" y="1242" width="98" height="266" rx="49" fill="url(#flowSecondary)" fill-opacity="0.42"/>
+  <rect x="1408" y="1168" width="108" height="340" rx="54" fill="url(#flowSecondary)" fill-opacity="0.52"/>
+
+  <circle cx="156" cy="2708" r="168" fill="#1D4ED8" fill-opacity="0.16"/>
+</svg>

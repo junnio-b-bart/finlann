@@ -10,8 +10,6 @@ import { loadStateFromBackend, saveStateToBackend, subscribeToStateChanges } fro
 
 import "./styles/globals.css";
 import "./styles/finlann.css";
-import loadingStep1 from "./assets/waitingscreen/progresso empty.png";
-import loadingStep2 from "./assets/waitingscreen/progresso empty (2).png";
 import logoFinlann from "./assets/logo-f-mark.png";
 
 const STORAGE_KEY = "finlann-state-v1";
@@ -27,7 +25,6 @@ export default function App() {
   const [financeState, setFinanceState] = useState(null);
   const [isBooting, setIsBooting] = useState(true);
   const [pendingRemoteState, setPendingRemoteState] = useState(null); // mantido por enquanto
-  const [frame, setFrame] = useState(0); // animaÃ§Ã£o da tela de carregamento
   const [showIntro, setShowIntro] = useState(true); // vinheta de abertura
 
   // Conta logada: lida do localStorage para nÃ£o perder ao recarregar
@@ -318,18 +315,6 @@ export default function App() {
 
     return () => unsubscribe?.();
   }, [financeState, currentAccount?.user_id]);
-
-  // animaÃ§Ã£o da tela de carregamento / vinheta: alterna entre duas imagens
-  useEffect(() => {
-    if (!showIntro && !isBooting && financeState) return; // sÃ³ anima enquanto estÃ¡ na intro ou carregando
-
-    const id = setInterval(() => {
-      setFrame((prev) => (prev === 0 ? 1 : 0));
-    }, 600);
-
-    return () => clearInterval(id);
-  }, [showIntro, isBooting, financeState]);
-
   function handleAddExpense(expense) {
     setFinanceState((prev) => addExpense(prev, expense));
     setToast({ message: "Saida registrada com sucesso.", kind: "success" });
@@ -498,20 +483,15 @@ export default function App() {
 
   // Vinheta de abertura: mostra sÃ³ quando o app Ã© aberto de novo na sessÃ£o
   if (showIntro) {
-    const currentImage = frame === 0 ? loadingStep1 : loadingStep2;
 
     return (
       <div className="app-root">
-        <div className="app-shell">
+        <div className="app-shell app-shell--loading">
           <main className="finlann-loading-screen">
-            <div className="finlann-loading-logo-pill">
-              <img src={logoFinlann} alt="Finlann" className="finlann-loading-logo-img" />
+            <div className="finlann-loading-brand" aria-label="Finlann">
+              <img src={logoFinlann} alt="" className="finlann-loading-logo-img" />
+              <span className="finlann-loading-brand__name">Finlann</span>
             </div>
-            <img
-              src={currentImage}
-              alt="Abrindo Finlann"
-              className="finlann-loading-screen__image"
-            />
           </main>
         </div>
       </div>
@@ -520,20 +500,15 @@ export default function App() {
 
   // Tela de carregamento enquanto os dados ainda nÃ£o chegaram
   if (isBooting || !financeState) {
-    const currentImage = frame === 0 ? loadingStep1 : loadingStep2;
 
     return (
       <div className="app-root">
-        <div className="app-shell">
+        <div className="app-shell app-shell--loading">
           <main className="finlann-loading-screen">
-            <div className="finlann-loading-logo-pill">
-              <img src={logoFinlann} alt="Finlann" className="finlann-loading-logo-img" />
+            <div className="finlann-loading-brand" aria-label="Finlann">
+              <img src={logoFinlann} alt="" className="finlann-loading-logo-img" />
+              <span className="finlann-loading-brand__name">Finlann</span>
             </div>
-            <img
-              src={currentImage}
-              alt="Carregando Finlann"
-              className="finlann-loading-screen__image"
-            />
           </main>
         </div>
       </div>
@@ -556,15 +531,7 @@ export default function App() {
 
   return (
     <div className="app-root">
-      <div
-        className={[
-          "app-shell",
-          "app-shell--ambient",
-          tab === "overview" ? "app-shell--overview" : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-      >
+      <div className={tab === "overview" ? "app-shell app-shell--overview" : "app-shell"}>
         <main>
           {toast && <Toast message={toast.message} kind={toast.kind} />}
 
@@ -635,4 +602,6 @@ export default function App() {
     </div>
   );
 }
+
+
 

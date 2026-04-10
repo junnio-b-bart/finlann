@@ -132,10 +132,6 @@ body {
   gap: 18px;
 }
 
-.app-shell--ambient {
-  background: #010412 url("../assets/summary-background-v1.svg") center center / cover no-repeat;
-}
-
 .app-shell--auth {
   width: 100vw;
   max-width: 100vw;
@@ -143,6 +139,76 @@ body {
   padding: 0;
   gap: 0;
   background: #010412 url("../assets/login-background.svg") center center / cover no-repeat;
+}
+
+.app-shell--loading {
+  width: 100vw;
+  max-width: 100vw;
+  min-height: 100dvh;
+  padding: 0;
+  gap: 0;
+  position: relative;
+  overflow: hidden;
+  background: #010412 url("../assets/loading-background-v2.svg") center center / cover no-repeat;
+}
+
+.app-shell--loading::before,
+.app-shell--loading::after {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(14px);
+  will-change: transform, opacity;
+}
+
+.app-shell--loading::before {
+  background:
+    radial-gradient(38% 46% at 78% 33%, rgba(71, 234, 203, 0.34) 0%, rgba(71, 234, 203, 0.06) 46%, rgba(71, 234, 203, 0) 100%),
+    radial-gradient(32% 42% at 58% 84%, rgba(42, 195, 226, 0.24) 0%, rgba(42, 195, 226, 0.04) 52%, rgba(42, 195, 226, 0) 100%);
+  animation: finlann-loading-ambient-drift 9.2s ease-in-out infinite;
+}
+
+.app-shell--loading::after {
+  background:
+    radial-gradient(36% 44% at 74% 41%, rgba(137, 255, 228, 0.2) 0%, rgba(137, 255, 228, 0.05) 48%, rgba(137, 255, 228, 0) 100%);
+  animation: finlann-loading-ambient-breathe 5.8s ease-in-out infinite;
+}
+
+.app-shell--loading main {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes finlann-loading-ambient-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.58;
+  }
+  50% {
+    transform: translate3d(-2.2%, 1.4%, 0) scale(1.035);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.58;
+  }
+}
+
+@keyframes finlann-loading-ambient-breathe {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.98);
+    opacity: 0.24;
+  }
+  50% {
+    transform: translate3d(1.2%, -1.3%, 0) scale(1.04);
+    opacity: 0.74;
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.98);
+    opacity: 0.24;
+  }
 }
 
 main {
@@ -198,6 +264,11 @@ main {
   }
 
   .app-shell--auth {
+    padding: 0;
+    gap: 0;
+  }
+
+  .app-shell--loading {
     padding: 0;
     gap: 0;
   }

@@ -10,7 +10,7 @@
   background-color: #010412;
   background-image: url("../assets/summary-background-v1.svg");
   background-repeat: no-repeat;
-  background-position: center 62%;
+  background-position: center 52%;
   background-size: cover;
 }
 
@@ -114,8 +114,7 @@
 }
 
 .finlann-dashboard--history.finlann-dashboard--ambient {
-  background: transparent;
-  background-image: none;
+  background-position: center center;
 }
 
 .finlann-dashboard--history .finlann-dashboard__top {
@@ -334,7 +333,7 @@
 
 @media (max-width: 768px) {
   .finlann-dashboard--ambient {
-    background-position: center 58%;
+    background-position: center 50%;
   }
 
   /* Cards principais: Entradas / SaÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­das lado a lado, Saldo embaixo centralizado */
@@ -1667,7 +1666,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 14px;
+  position: relative;
 }
 
 .finlann-loading-screen__image {
@@ -2334,17 +2334,36 @@
 }
 
 
-.finlann-loading-logo-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .finlann-loading-logo-img {
-  height: 54px; /* ajustado ~15% menor para equilibrar com a carteira */
+  height: 86px;
   width: auto;
   display: block;
 }
+
+.finlann-loading-brand {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 2;
+}
+
+.finlann-loading-brand__name {
+  position: relative;
+  display: inline-block;
+  font-size: clamp(44px, 8.8vw, 62px);
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-family: "Avenir Next", "SF Pro Display", "Poppins", "Inter", sans-serif;
+  background: linear-gradient(100deg, #67e9a6 0%, #149d84 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-rendering: geometricPrecision;
+}
+
 
 
 .finlann-statement-row--selected {
@@ -2567,14 +2586,17 @@
 }
 
 .finlann-login-welcome-card-row {
-  display: flex;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(164px, 184px);
+  align-items: center;
   gap: 12px;
+  width: 100%;
 }
 
 .finlann-login-welcome-identity {
   width: auto;
   flex: 1 1 auto;
+  min-width: 0;
   background: transparent;
   border: none;
   color: inherit;
@@ -2660,7 +2682,8 @@
 }
 
 .finlann-login-welcome-enter {
-  width: 184px;
+  width: 100%;
+  max-width: 184px;
   min-height: 67px;
   height: 67px;
   border: none;
@@ -2680,6 +2703,7 @@
   cursor: pointer;
   transition: transform 0.1s ease, filter 0.15s ease;
   flex-shrink: 0;
+  justify-self: end;
 }
 
 .finlann-login-welcome-enter span {
@@ -2868,6 +2892,7 @@
   }
 
   .finlann-login-welcome-card-row {
+    grid-template-columns: minmax(0, 1fr) 156px;
     gap: 10px;
   }
 
@@ -2901,7 +2926,8 @@
   }
 
   .finlann-login-welcome-enter {
-    width: 156px;
+    width: 100%;
+    max-width: 156px;
     min-height: 61px;
     height: 61px;
     border-radius: 16px;
