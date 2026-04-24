@@ -129,6 +129,7 @@ body {
   align-items: stretch;
 }
 
+
 .app-shell {
   /* conteúdo centralizado com um leve zoom, mas sem cortar bordas */
   width: min(95vw, 960px);
@@ -188,6 +189,17 @@ body {
   position: relative;
   z-index: 1;
 }
+
+.app-shell--history-bg {
+  min-height: calc(100dvh - 16px); /* preserva a margem externa e cobre todo o quadro da tela */
+  background: #010412 url("../assets/summary-background-v1.svg") center center / cover no-repeat;
+}
+
+.app-shell--settings-bg {
+  min-height: calc(100dvh - 16px); /* preserva a margem externa e cobre todo o quadro da tela */
+  background: #010412 url("../assets/summary-background-v1.svg") center center / cover no-repeat;
+}
+
 
 @keyframes finlann-loading-ambient-drift {
   0% {
@@ -263,6 +275,7 @@ main {
     padding: 0;
   }
 
+
   .app-shell {
     width: 100vw;
     max-width: 100vw;
@@ -274,6 +287,17 @@ main {
     padding: 0 0 120px;
     gap: 0;
   }
+
+  .app-shell--history-bg {
+    min-height: calc(100dvh - 4px); /* margem inferior do mobile */
+    background-position: center 50%;
+  }
+
+  .app-shell--settings-bg {
+    min-height: calc(100dvh - 4px); /* margem inferior do mobile */
+    background-position: center 50%;
+  }
+
 
   .app-shell--auth {
     padding: 0;

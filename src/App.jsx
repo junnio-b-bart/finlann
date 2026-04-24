@@ -574,7 +574,16 @@ export default function App() {
 
   return (
     <div className="app-root">
-      <div className={tab === "overview" ? "app-shell app-shell--overview" : "app-shell"}>
+      <div
+        className={[
+          "app-shell",
+          tab === "overview" ? "app-shell--overview" : "",
+          tab === "history" ? "app-shell--history-bg" : "",
+          tab === "settings" ? "app-shell--settings-bg" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
         <main>
           {toast && <Toast message={toast.message} kind={toast.kind} />}
 

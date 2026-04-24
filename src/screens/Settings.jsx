@@ -30,7 +30,6 @@ export default function Settings({
 
   const [showEraseModal, setShowEraseModal] = useState(false);
   const [showInvoiceImportModal, setShowInvoiceImportModal] = useState(false);
-  const [showInvoiceImageImportModal, setShowInvoiceImageImportModal] = useState(false);
   const [eraseConfirmation, setEraseConfirmation] = useState("");
 
   // Modal de conta Finlann
@@ -211,13 +210,32 @@ export default function Settings({
     return <SettingsNotifications onBack={() => onChangeView("root")} />;
   }
 
+  if (view === "invoice-image") {
+    return (
+      <div className="finlann-dashboard finlann-dashboard--settings finlann-dashboard--ambient finlann-dashboard--settings-invoice-image">
+        <div className="finlann-dashboard__scroll finlann-dashboard__scroll--settings finlann-dashboard__scroll--invoice-image">
+          <InvoiceImageImportModal
+            asPage
+            cards={financeState?.cards || []}
+            onClose={() => onChangeView("root")}
+            onImportExpenses={onImportExpenses}
+            onSettingsToast={onSettingsToast}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="finlann-dashboard finlann-dashboard--settings">
+    <div className="finlann-dashboard finlann-dashboard--settings finlann-dashboard--ambient">
       <div className="finlann-dashboard__top">
         <div className="finlann-header-strip">
           <header className="finlann-header finlann-header--centered">
             <div className="finlann-header__left" style={{ paddingTop: 8 }}>
-              <h1 className="finlann-section__title">Configurações</h1>
+              <h1 className="finlann-settings-title-brand">
+                <span className="finlann-settings-title-brand__icon" aria-hidden="true" />
+                <span>Configuração</span>
+              </h1>
             </div>
           </header>
         </div>
@@ -386,7 +404,7 @@ export default function Settings({
           <button
             type="button"
             className="finlann-list-item"
-            onClick={() => setShowInvoiceImageImportModal(true)}
+            onClick={() => onChangeView("invoice-image")}
           >
             <div className="finlann-list-item__left">
               <div>
@@ -429,15 +447,6 @@ export default function Settings({
         <InvoicePdfImportModal
           cards={financeState?.cards || []}
           onClose={() => setShowInvoiceImportModal(false)}
-          onImportExpenses={onImportExpenses}
-          onSettingsToast={onSettingsToast}
-        />
-      )}
-
-      {showInvoiceImageImportModal && (
-        <InvoiceImageImportModal
-          cards={financeState?.cards || []}
-          onClose={() => setShowInvoiceImageImportModal(false)}
           onImportExpenses={onImportExpenses}
           onSettingsToast={onSettingsToast}
         />
@@ -1246,3 +1255,4 @@ export default function Settings({
     </div>
   );
 }
+

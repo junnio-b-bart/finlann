@@ -3,6 +3,7 @@ import Overlay from "./Overlay.jsx";
 import CardModal from "./CardModal.jsx";
 import ExpenseModal from "./ExpenseModal.jsx";
 import { getCardInvoiceCycleDates, getCardInvoiceForMonth } from "../data/finance.js";
+import penIcon from "../assets/icons/pen.png";
 
 function formatCurrency(value) {
   return value.toLocaleString("pt-BR", {
@@ -71,9 +72,11 @@ export default function CardStatementModal({
   };
 
   const accentColor = card.color || undefined;
-  const monthFormatter = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" });
+  const monthFormatter = new Intl.DateTimeFormat("pt-BR", { month: "long" });
   const invoiceDate = new Date(currentYear, currentMonthIndex, 1);
-  const invoiceLabel = monthFormatter.format(invoiceDate);
+  const invoiceMonthLabel = monthFormatter.format(invoiceDate).toUpperCase();
+  const invoiceYearShort = String(invoiceDate.getFullYear()).slice(-2);
+  const invoiceLabel = `${invoiceMonthLabel} de ${invoiceYearShort}`;
   const selectionIcon = selectionMode ? "☑" : "☐"; // caixinha marcada/vazia
 
   // Reconstrói a lógica de fatura para este cartão e mês/ano
@@ -136,17 +139,16 @@ export default function CardStatementModal({
             }}
           >
             <p className="finlann-modal__eyebrow">
-              Fatura do cartão de {invoiceLabel}
+              Fatura de {invoiceLabel}
             </p>
             <button
               type="button"
-              className="finlann-modal__close finlann-statement-icon-btn finlann-statement-icon-btn--gear"
+              className="finlann-modal__secondary finlann-statement-edit-card-btn"
               onClick={() => setShowEditCard(true)}
-              aria-label="Editar cartÃ£o"
-              data-label={isThisInvoicePaid ? "✓ Paga" : "✓ Pagar fatura"}
-              disabled={false}
+              aria-label="Editar cartao"
             >
-              ×
+              <img src={penIcon} alt="" className="finlann-statement-edit-card-btn__icon" />
+              <span>Editar cartao</span>
             </button>
           </div>
 
@@ -376,13 +378,14 @@ export default function CardStatementModal({
                   </span>
                 )}
                 <button
-                  type="button"
-                  className="finlann-modal__close finlann-statement-icon-btn finlann-statement-icon-btn--gear"
-                  onClick={() => setShowEditCard(true)}
-                  aria-label="Editar cartão"
-                >
-                  ⚙
-                </button>
+              type="button"
+              className="finlann-modal__secondary finlann-statement-edit-card-btn"
+              onClick={() => setShowEditCard(true)}
+              aria-label="Editar cartao"
+            >
+              <img src={penIcon} alt="" className="finlann-statement-edit-card-btn__icon" />
+              <span>Editar cartao</span>
+            </button>
               </div>
             )}
           </div>
@@ -552,3 +555,5 @@ export default function CardStatementModal({
     </>
   );
 }
+
+

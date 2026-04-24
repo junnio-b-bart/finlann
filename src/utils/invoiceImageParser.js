@@ -30,13 +30,21 @@ export async function parseInvoiceImageFiles(
   const lines = [];
 
   try {
+    await worker.setParameters({
+      preserve_interword_spaces: "1",
+    });
+
     for (let fileIndex = 0; fileIndex < imageFiles.length; fileIndex += 1) {
       const imageFile = imageFiles[fileIndex];
       const { data } = await worker.recognize(imageFile);
-      const pageLines = String(data?.text || "")
-        .split(/\r?\n/g)
-        .map((line) => normalizeLine(line))
-        .filter(Boolean);
+      const pageLines = Array.isArray(data?.lines) && data.lines.length > 0
+        ? data.lines
+            .map((line) => normalizeLine(line?.text || ""))
+            .filter(Boolean)
+        : String(data?.text || "")
+            .split(/\r?\n/g)
+            .map((line) => normalizeLine(line))
+            .filter(Boolean);
 
       pageLines.forEach((line, lineIndex) => {
         lines.push({
