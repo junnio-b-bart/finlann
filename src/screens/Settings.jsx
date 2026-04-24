@@ -29,7 +29,6 @@ export default function Settings({
   const exported = exportState(financeState);
 
   const [showEraseModal, setShowEraseModal] = useState(false);
-  const [showInvoiceImportModal, setShowInvoiceImportModal] = useState(false);
   const [eraseConfirmation, setEraseConfirmation] = useState("");
 
   // Modal de conta Finlann
@@ -217,6 +216,23 @@ export default function Settings({
           <InvoiceImageImportModal
             asPage
             cards={financeState?.cards || []}
+            existingExpenses={financeState?.expenses || []}
+            onClose={() => onChangeView("root")}
+            onImportExpenses={onImportExpenses}
+            onSettingsToast={onSettingsToast}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (view === "invoice-pdf") {
+    return (
+      <div className="finlann-dashboard finlann-dashboard--settings finlann-dashboard--ambient finlann-dashboard--settings-invoice-image">
+        <div className="finlann-dashboard__scroll finlann-dashboard__scroll--settings finlann-dashboard__scroll--invoice-image">
+          <InvoicePdfImportModal
+            asPage
+            cards={financeState?.cards || []}
             onClose={() => onChangeView("root")}
             onImportExpenses={onImportExpenses}
             onSettingsToast={onSettingsToast}
@@ -389,7 +405,7 @@ export default function Settings({
           <button
             type="button"
             className="finlann-list-item"
-            onClick={() => setShowInvoiceImportModal(true)}
+            onClick={() => onChangeView("invoice-pdf")}
           >
             <div className="finlann-list-item__left">
               <div>
@@ -442,15 +458,6 @@ export default function Settings({
         </div>
       </section>
       </div>
-
-      {showInvoiceImportModal && (
-        <InvoicePdfImportModal
-          cards={financeState?.cards || []}
-          onClose={() => setShowInvoiceImportModal(false)}
-          onImportExpenses={onImportExpenses}
-          onSettingsToast={onSettingsToast}
-        />
-      )}
 
       {showEraseModal && (
         <div className="finlann-overlay">

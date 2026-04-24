@@ -190,7 +190,7 @@ export default function CardStatementModal({
             {/* espaço reservado, mas sem conteúdo extra aqui agora */}
           </div>
 
-          <div className="finlann-statement-scroll">
+          <div className="finlann-statement-scroll finlann-statement-scroll--card-limit">
             <div className="finlann-statement-table finlann-statement-table--card">
             <div className="finlann-statement-row finlann-statement-row--header">
               <span>Data</span>

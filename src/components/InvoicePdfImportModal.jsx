@@ -36,6 +36,7 @@ export default function InvoicePdfImportModal({
   onClose,
   onImportExpenses,
   onSettingsToast,
+  asPage = false,
 }) {
   const creditCards = useMemo(
     () => (cards || []).filter((card) => !card?.kind || card.kind === "credit"),
@@ -53,6 +54,7 @@ export default function InvoicePdfImportModal({
   const [parsedItems, setParsedItems] = useState([]);
   const [selectedItemKeys, setSelectedItemKeys] = useState([]);
   const [parseMeta, setParseMeta] = useState({ pages: 0, lines: 0 });
+  const [activeTab, setActiveTab] = useState("upload");
 
   useEffect(() => {
     if (selectedCardId) return;
@@ -65,6 +67,9 @@ export default function InvoicePdfImportModal({
     parsedItems.length > 0 && selectedItemKeys.length === parsedItems.length;
 
   const selectedCount = selectedItemKeys.length;
+  const isSelectionTab = asPage && activeTab === "select";
+  const showUploadSection = !asPage || activeTab === "upload";
+  const showSelectionSection = parsedItems.length > 0 && (!asPage || activeTab === "select");
 
   const yearOptions = useMemo(() => {
     const values = [];
@@ -97,6 +102,8 @@ export default function InvoicePdfImportModal({
         setParseError(
           "Nao encontramos lancamentos automaticamente neste PDF. Tente outro arquivo ou outra fatura."
         );
+      } else if (asPage) {
+        setActiveTab("select");
       }
     } catch (error) {
       console.error("[Finlann] Falha ao ler PDF da fatura:", error);
@@ -104,6 +111,7 @@ export default function InvoicePdfImportModal({
       setSelectedItemKeys([]);
       setParseMeta({ pages: 0, lines: 0 });
       setParseError("Nao foi possivel ler esse PDF. Verifique o arquivo e tente novamente.");
+      setActiveTab("upload");
     } finally {
       setIsParsing(false);
     }
@@ -186,163 +194,196 @@ export default function InvoicePdfImportModal({
     onClose?.();
   }
 
-  return (
-    <div className="finlann-overlay">
-      <div className="finlann-overlay__panel finlann-overlay__panel--invoice-import">
-        <header className="finlann-modal__header">
-          <p className="finlann-modal__eyebrow">Importacao de fatura</p>
-          <h2 className="finlann-modal__title">Importar itens via PDF</h2>
-        </header>
+  const panel = (
+    <div
+      className={
+        "finlann-overlay__panel finlann-overlay__panel--invoice-import" +
+        (asPage ? " finlann-overlay__panel--invoice-import-page" : "")
+      }
+    >
+      {asPage && (
+        <button
+          type="button"
+          className="finlann-invoice-pdf-page-back"
+          onClick={onClose}
+        >
+          {"<- Voltar"}
+        </button>
+      )}
 
-        <div className="finlann-modal__body finlann-modal__body--scroll">
-          {creditCards.length === 0 && (
-            <p className="finlann-settings-profile-subtitle">
-              Cadastre um cartao de credito antes de importar a fatura.
-            </p>
-          )}
+      <header className="finlann-modal__header">
+        <p className="finlann-modal__eyebrow">
+          {isSelectionTab ? "Itens extraidos do PDF" : "Importacao da fatura"}
+        </p>
+        <h2 className="finlann-modal__title">
+          {isSelectionTab ? "Escolha os itens para importar" : "Selecionar itens do PDF"}
+        </h2>
+      </header>
 
-          <div className="finlann-invoice-import__filters">
-            <div className="finlann-field">
-              <label className="finlann-field__label">Cartao</label>
-              <div className="finlann-select finlann-select--compact">
-                <select
-                  value={selectedCardId}
-                  onChange={(event) => setSelectedCardId(event.target.value)}
-                  disabled={creditCards.length === 0}
-                >
-                  {creditCards.length === 0 && <option value="">Sem cartao</option>}
-                  {creditCards.map((card) => (
-                    <option key={card.id} value={card.id}>
-                      {card.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+      <div className="finlann-modal__body finlann-modal__body--scroll">
+        {creditCards.length === 0 && (
+          <p className="finlann-settings-profile-subtitle">
+            Cadastre um cartao de credito antes de importar a fatura.
+          </p>
+        )}
 
-            <div className="finlann-field">
-              <label className="finlann-field__label">Mes de referencia</label>
-              <div className="finlann-invoice-import__month-row">
+        {showUploadSection && (
+          <>
+            <div className="finlann-invoice-import__filters">
+              <div className="finlann-field">
+                <label className="finlann-field__label">Cartao</label>
                 <div className="finlann-select finlann-select--compact">
                   <select
-                    value={invoiceMonthIndex}
-                    onChange={(event) => setInvoiceMonthIndex(Number(event.target.value))}
+                    value={selectedCardId}
+                    onChange={(event) => setSelectedCardId(event.target.value)}
+                    disabled={creditCards.length === 0}
                   >
-                    {MONTH_LABELS.map((label, index) => (
-                      <option key={`${label}-${index}`} value={index}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="finlann-select finlann-select--compact">
-                  <select
-                    value={invoiceYear}
-                    onChange={(event) => setInvoiceYear(Number(event.target.value))}
-                  >
-                    {yearOptions.map((year) => (
-                      <option key={`year-${year}`} value={year}>
-                        {year}
+                    {creditCards.length === 0 && <option value="">Sem cartao</option>}
+                    {creditCards.map((card) => (
+                      <option key={card.id} value={card.id}>
+                        {card.label}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
-            </div>
 
-            <div className="finlann-field">
-              <label className="finlann-field__label">PDF da fatura</label>
-              <input
-                type="file"
-                accept=".pdf,application/pdf"
-                onChange={(event) => {
-                  const file = event.target.files?.[0] || null;
-                  setSelectedFile(file);
-                  setParseError("");
-                  setParsedItems([]);
-                  setSelectedItemKeys([]);
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="finlann-settings-actions-row">
-            <button
-              type="button"
-              className="finlann-chip finlann-chip--solid finlann-chip--accent"
-              disabled={!selectedFile || isParsing || creditCards.length === 0}
-              onClick={handleParsePdf}
-            >
-              {isParsing ? "Lendo PDF..." : "Ler PDF e listar itens"}
-            </button>
-          </div>
-
-          {parseError && (
-            <p className="finlann-settings-profile-subtitle" style={{ color: "#fecaca" }}>
-              {parseError}
-            </p>
-          )}
-
-          {parsedItems.length > 0 && (
-            <>
-              <div className="finlann-invoice-import__summary">
-                <span>{parsedItems.length} item(ns) encontrados</span>
-                <span>{parseMeta.pages} pagina(s) lidas</span>
-                <span>{parseMeta.lines} linha(s) analisadas</span>
-              </div>
-
-              <label className="finlann-invoice-import__check-all">
-                <input type="checkbox" checked={allSelected} onChange={handleToggleSelectAll} />
-                <span>Selecionar todos</span>
-              </label>
-
-              <div className="finlann-invoice-import__list" role="list">
-                {parsedItems.map((item) => {
-                  const installmentLabel =
-                    item.totalInstallments > 1
-                      ? `${item.installmentNumber}/${item.totalInstallments}`
-                      : "-";
-
-                  return (
-                    <label
-                      key={item.key}
-                      className={
-                        "finlann-invoice-import__item" +
-                        (selectedItemKeys.includes(item.key) ? " is-selected" : "")
-                      }
-                      role="listitem"
+              <div className="finlann-field">
+                <label className="finlann-field__label">Mes de referencia</label>
+                <div className="finlann-invoice-import__month-row">
+                  <div className="finlann-select finlann-select--compact">
+                    <select
+                      value={invoiceMonthIndex}
+                      onChange={(event) => setInvoiceMonthIndex(Number(event.target.value))}
                     >
-                      <input
-                        type="checkbox"
-                        checked={selectedItemKeys.includes(item.key)}
-                        onChange={() => toggleSelectItem(item.key)}
-                      />
-                      <div className="finlann-invoice-import__item-main">
-                        <div className="finlann-invoice-import__item-title">
-                          <span>{item.description || "(sem descricao)"}</span>
-                          <strong>{formatMoney(item.installmentAmount)}</strong>
-                        </div>
-                        <div className="finlann-invoice-import__item-subtitle">
-                          <span>Data: {formatDate(item.purchaseDateIso)}</span>
-                          <span>Parcela: {installmentLabel}</span>
-                          <span>
-                            Pag. {item.pageNumber} / Linha {item.lineNumber}
-                          </span>
-                        </div>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
+                      {MONTH_LABELS.map((label, index) => (
+                        <option key={`${label}-${index}`} value={index}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-        <footer className="finlann-modal__footer finlann-modal__footer--split">
+                  <div className="finlann-select finlann-select--compact">
+                    <select
+                      value={invoiceYear}
+                      onChange={(event) => setInvoiceYear(Number(event.target.value))}
+                    >
+                      {yearOptions.map((year) => (
+                        <option key={`year-${year}`} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="finlann-field">
+                <label className="finlann-field__label">PDF da fatura</label>
+                <input
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] || null;
+                    setSelectedFile(file);
+                    setParseError("");
+                    setParsedItems([]);
+                    setSelectedItemKeys([]);
+                    setParseMeta({ pages: 0, lines: 0 });
+                    setActiveTab("upload");
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="finlann-settings-actions-row">
+              <button
+                type="button"
+                className="finlann-chip finlann-chip--solid finlann-chip--accent"
+                disabled={!selectedFile || isParsing || creditCards.length === 0}
+                onClick={handleParsePdf}
+              >
+                {isParsing ? "Lendo PDF..." : "Ler PDF e abrir selecao"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {showSelectionSection && (
+          <>
+            <div className="finlann-invoice-import__summary">
+              <span>{parsedItems.length} item(ns) encontrados</span>
+              <span>{parseMeta.pages} pagina(s) lidas</span>
+              <span>{parseMeta.lines} linha(s) analisadas</span>
+            </div>
+
+            <label className="finlann-invoice-import__check-all">
+              <input type="checkbox" checked={allSelected} onChange={handleToggleSelectAll} />
+              <span>Selecionar todos</span>
+            </label>
+
+            <div className="finlann-invoice-import__list" role="list">
+              {parsedItems.map((item) => {
+                const installmentLabel =
+                  item.totalInstallments > 1
+                    ? `${item.installmentNumber}/${item.totalInstallments}`
+                    : "-";
+
+                return (
+                  <label
+                    key={item.key}
+                    className={
+                      "finlann-invoice-import__item" +
+                      (selectedItemKeys.includes(item.key) ? " is-selected" : "")
+                    }
+                    role="listitem"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedItemKeys.includes(item.key)}
+                      onChange={() => toggleSelectItem(item.key)}
+                    />
+                    <div className="finlann-invoice-import__item-main">
+                      <div className="finlann-invoice-import__item-title">
+                        <span>{item.description || "(sem descricao)"}</span>
+                        <strong>{formatMoney(item.installmentAmount)}</strong>
+                      </div>
+                      <div className="finlann-invoice-import__item-subtitle">
+                        <span>Data: {formatDate(item.purchaseDateIso)}</span>
+                        <span>Parcela: {installmentLabel}</span>
+                      </div>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {parseError && (
+          <p className="finlann-settings-profile-subtitle" style={{ color: "#fecaca" }}>
+            {parseError}
+          </p>
+        )}
+      </div>
+
+      <footer className="finlann-modal__footer finlann-modal__footer--split">
+        {isSelectionTab ? (
+          <button
+            type="button"
+            className="finlann-modal__secondary"
+            onClick={() => setActiveTab("upload")}
+          >
+            Voltar para PDF
+          </button>
+        ) : (
           <button type="button" className="finlann-modal__secondary" onClick={onClose}>
             Cancelar
           </button>
+        )}
+
+        {showSelectionSection && (
           <button
             type="button"
             className="finlann-modal__primary"
@@ -351,8 +392,18 @@ export default function InvoicePdfImportModal({
           >
             Importar selecionados ({selectedCount})
           </button>
-        </footer>
-      </div>
+        )}
+      </footer>
+    </div>
+  );
+
+  if (asPage) {
+    return <div className="finlann-invoice-pdf-page">{panel}</div>;
+  }
+
+  return (
+    <div className="finlann-overlay">
+      {panel}
     </div>
   );
 }

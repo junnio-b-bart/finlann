@@ -1761,11 +1761,44 @@
 /* wrapper para tabelas dos popups:
    em telas pequenas, habilita scroll horizontal quando faltar espaÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§o */
 .finlann-statement-scroll {
+  --finlann-table-visible-rows: 12;
+  --finlann-table-row-height: 32px;
+  --finlann-table-header-height: 34px;
+  --finlann-table-viewport-offset: 320px;
   width: 100%;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 2px;
+  padding-right: 4px;
+  max-height: min(
+    calc(
+      var(--finlann-table-header-height) +
+        (var(--finlann-table-row-height) * var(--finlann-table-visible-rows))
+    ),
+    calc(100dvh - var(--finlann-table-viewport-offset))
+  );
+}
+
+/* Fatura do cartão: mostra até 12 linhas e rola internamente o restante */
+.finlann-statement-scroll--card-limit {
+  /* Mantido por compatibilidade; o comportamento agora é global via .finlann-statement-scroll */
+}
+
+@media (max-width: 768px) {
+  .finlann-statement-scroll {
+    --finlann-table-row-height: 31px;
+    --finlann-table-header-height: 33px;
+    --finlann-table-viewport-offset: 272px;
+  }
+}
+
+@media (max-width: 430px) {
+  .finlann-statement-scroll {
+    --finlann-table-row-height: 30px;
+    --finlann-table-header-height: 32px;
+    --finlann-table-viewport-offset: 238px;
+  }
 }
 
 .finlann-statement-scroll::-webkit-scrollbar {
@@ -1891,15 +1924,18 @@
 }
 
 .finlann-dashboard__scroll--invoice-image {
-  max-height: none;
+  max-height: calc(100dvh - 132px - env(safe-area-inset-bottom));
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding-right: 0;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 
 .finlann-dashboard--settings-invoice-image {
   gap: 0;
+  overflow: hidden;
   padding-bottom: calc(84px + env(safe-area-inset-bottom));
 }
 
@@ -3614,6 +3650,36 @@
   max-width: 760px;
 }
 
+.finlann-invoice-pdf-page {
+  width: 100%;
+  min-height: auto;
+  display: block;
+  padding: 0;
+}
+
+.finlann-overlay__panel--invoice-import.finlann-overlay__panel--invoice-import-page {
+  width: 100%;
+  max-width: 100%;
+  max-height: none;
+  margin: 0;
+}
+
+.finlann-overlay__panel--invoice-import.finlann-overlay__panel--invoice-import-page .finlann-modal__body--scroll {
+  max-height: min(62dvh, 560px);
+}
+
+.finlann-invoice-pdf-page-back {
+  width: fit-content;
+  border: 1px solid rgba(110, 160, 243, 0.52);
+  background: rgba(5, 14, 40, 0.62);
+  color: #d8e8ff;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
 .finlann-invoice-import__filters {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3690,11 +3756,11 @@
 }
 
 .finlann-invoice-import__item-subtitle {
-  margin-top: 2px;
+  margin-top: 4px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  font-size: 11px;
+  gap: 10px;
+  font-size: 12px;
   color: #94a3b8;
 }
 
@@ -3917,6 +3983,19 @@
   flex-direction: column;
   gap: 5px;
   margin-bottom: 12px;
+}
+
+.finlann-invoice-photo-header--page {
+  gap: 2px;
+}
+
+.finlann-invoice-photo-header--page .finlann-invoice-photo-header__title {
+  margin-top: 0;
+  font-size: clamp(28px, 6.6vw, 34px);
+}
+
+.finlann-invoice-photo-header--page .finlann-invoice-photo-header__subtitle {
+  font-size: clamp(16px, 4vw, 20px);
 }
 
 .finlann-invoice-photo-brand {
@@ -4200,6 +4279,65 @@
   gap: 8px;
 }
 
+.finlann-overlay--invoice-photo-results {
+  z-index: 52;
+  padding: 14px;
+}
+
+.finlann-overlay__panel--invoice-photo-results {
+  width: min(980px, 100%);
+  max-width: min(980px, 100%);
+  max-height: calc(100dvh - 28px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+}
+
+.finlann-overlay__panel--invoice-photo-results .finlann-invoice-photo-results {
+  margin: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+.finlann-overlay__panel--invoice-photo-results .finlann-invoice-photo-results__table-wrap {
+  max-height: min(62dvh, 560px);
+}
+
+.finlann-overlay__panel--invoice-photo-results .finlann-invoice-photo-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.finlann-overlay__panel--invoice-photo-results .finlann-invoice-photo-table th:nth-child(1),
+.finlann-overlay__panel--invoice-photo-results .finlann-invoice-photo-table td:nth-child(1) {
+  width: 44px;
+  text-align: center;
+}
+
+.finlann-overlay__panel--invoice-photo-results .finlann-invoice-photo-table th:nth-child(2),
+.finlann-overlay__panel--invoice-photo-results .finlann-invoice-photo-table td:nth-child(2) {
+  width: 68px;
+}
+
+.finlann-overlay__panel--invoice-photo-results .finlann-invoice-photo-table th:nth-child(4),
+.finlann-overlay__panel--invoice-photo-results .finlann-invoice-photo-table td:nth-child(4) {
+  width: 62px;
+  text-align: center;
+}
+
+.finlann-overlay__panel--invoice-photo-results .finlann-invoice-photo-table th:nth-child(5),
+.finlann-overlay__panel--invoice-photo-results .finlann-invoice-photo-table td:nth-child(5) {
+  width: 94px;
+  text-align: right;
+}
+
+.finlann-overlay__panel--invoice-photo-results .finlann-invoice-photo-table td:nth-child(3) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .finlann-invoice-photo-results__header {
   display: flex;
   flex-wrap: wrap;
@@ -4278,6 +4416,22 @@
   background: rgba(45, 110, 196, 0.3);
 }
 
+.finlann-invoice-photo-table tbody tr.is-probable-duplicate {
+  background: rgba(250, 204, 21, 0.16);
+}
+
+.finlann-invoice-photo-table tbody tr.is-probable-duplicate:hover {
+  background: rgba(250, 204, 21, 0.22);
+}
+
+.finlann-invoice-photo-table tbody tr.is-selected.is-probable-duplicate {
+  background: linear-gradient(
+    90deg,
+    rgba(250, 204, 21, 0.28) 0%,
+    rgba(45, 110, 196, 0.3) 100%
+  );
+}
+
 .finlann-invoice-photo-table__select {
   width: 52px;
   text-align: center;
@@ -4285,9 +4439,33 @@
 
 .finlann-invoice-photo-table__description {
   max-width: 290px;
+}
+
+.finlann-invoice-photo-table__description-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.finlann-invoice-photo-table__description-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.finlann-invoice-photo-table__duplicate-badge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  border: 1px solid rgba(234, 179, 8, 0.65);
+  background: rgba(250, 204, 21, 0.2);
+  color: #fde68a;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  padding: 4px 8px;
+  white-space: nowrap;
 }
 
 .finlann-invoice-photo-table__value {
@@ -4344,9 +4522,29 @@
 }
 
 @media (max-width: 720px) {
+  .finlann-overlay--invoice-photo-results {
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+  }
+
+  .finlann-overlay__panel--invoice-photo-results {
+    border-radius: 18px;
+    max-height: calc(100dvh - 16px);
+    padding: 10px;
+  }
+
+  .finlann-overlay__panel--invoice-photo-results .finlann-invoice-photo-results__table-wrap {
+    max-height: min(56dvh, 460px);
+  }
+
+  .finlann-overlay__panel--invoice-photo-results .finlann-invoice-photo-table {
+    min-width: 0;
+  }
+
   .finlann-dashboard__scroll--invoice-image {
-    max-height: none;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 116px - env(safe-area-inset-bottom));
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
   }
 
   .finlann-dashboard--settings-invoice-image {

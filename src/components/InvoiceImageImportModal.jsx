@@ -53,8 +53,103 @@ function shortenFileName(fileName, maxLength = 20) {
   return `${head}...${extension}`;
 }
 
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function toDateOnly(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function dateDiffInDays(a, b) {
+  return Math.round(Math.abs(a.getTime() - b.getTime()) / 86400000);
+}
+
+function findLikelyDuplicate(item, existingExpenses, selectedCardId) {
+  const installmentAmount = Number(item?.installmentAmount || 0);
+  if (!(installmentAmount > 0)) return null;
+
+  const itemDate = toDateOnly(item?.purchaseDateIso);
+  if (!itemDate) return null;
+
+  const totalInstallments = Math.max(1, Number(item?.totalInstallments || 1));
+  const fullAmount = Number((installmentAmount * totalInstallments).toFixed(2));
+  const amountCandidates = [installmentAmount, fullAmount];
+  const itemDescription = normalizeText(item?.description);
+
+  let bestMatch = null;
+
+  for (const expense of existingExpenses || []) {
+    if (!expense) continue;
+
+    const expenseAmount = Number(expense.amount || 0);
+    if (!(expenseAmount > 0)) continue;
+
+    const expenseDate = toDateOnly(expense.purchaseDate || expense.createdAt);
+    if (!expenseDate) continue;
+
+    const daysDiff = dateDiffInDays(itemDate, expenseDate);
+    if (daysDiff > 3) continue;
+
+    let amountDiff = Number.POSITIVE_INFINITY;
+    for (const candidateAmount of amountCandidates) {
+      const diff = Math.abs(expenseAmount - candidateAmount);
+      if (diff < amountDiff) amountDiff = diff;
+    }
+
+    const tolerance = Math.max(0.1, Math.min(expenseAmount, installmentAmount) * 0.02);
+    if (amountDiff > tolerance) continue;
+
+    let score = 0;
+
+    if (amountDiff <= 0.01) score += 4;
+    else if (amountDiff <= 0.5) score += 3;
+    else score += 2;
+
+    if (daysDiff === 0) score += 3;
+    else if (daysDiff <= 1) score += 2;
+    else score += 1;
+
+    if (selectedCardId && expense.cardId && expense.cardId === selectedCardId) {
+      score += 1;
+    }
+
+    const expenseDescription = normalizeText(expense.description);
+    if (itemDescription && expenseDescription) {
+      if (itemDescription === expenseDescription) score += 2;
+      else if (
+        itemDescription.includes(expenseDescription) ||
+        expenseDescription.includes(itemDescription)
+      ) {
+        score += 1;
+      }
+    }
+
+    if (!bestMatch || score > bestMatch.score) {
+      bestMatch = {
+        score,
+        daysDiff,
+        amountDiff,
+        expenseDescription: expense.description || "",
+      };
+    }
+  }
+
+  return bestMatch && bestMatch.score >= 6 ? bestMatch : null;
+}
+
 export default function InvoiceImageImportModal({
   cards,
+  existingExpenses = [],
   onClose,
   onImportExpenses,
   onSettingsToast,
@@ -91,6 +186,17 @@ export default function InvoiceImageImportModal({
   const allSelected =
     parsedItems.length > 0 && selectedItemKeys.length === parsedItems.length;
   const selectedCount = selectedItemKeys.length;
+  const likelyDuplicateByKey = useMemo(() => {
+    const map = {};
+    for (const item of parsedItems) {
+      const match = findLikelyDuplicate(item, existingExpenses, selectedCardId);
+      if (match) {
+        map[item.key] = match;
+      }
+    }
+    return map;
+  }, [parsedItems, existingExpenses, selectedCardId]);
+  const likelyDuplicateCount = Object.keys(likelyDuplicateByKey).length;
 
   const yearOptions = useMemo(() => {
     const values = [];
@@ -259,6 +365,88 @@ export default function InvoiceImageImportModal({
     onClose?.();
   }
 
+  const resultsSection = parsedItems.length > 0 && (
+    <section className="finlann-invoice-photo-results">
+      <div className="finlann-invoice-photo-results__header">
+        <label className="finlann-invoice-photo-results__toggle">
+          <input type="checkbox" checked={allSelected} onChange={handleToggleSelectAll} />
+          <span>{parsedItems.length} itens encontrados</span>
+        </label>
+        <span className="finlann-invoice-photo-results__meta">
+          {parseMeta.pages} foto(s) | {parseMeta.lines} linha(s)
+          {likelyDuplicateCount > 0 ? ` | ${likelyDuplicateCount} provavel(is) duplicado(s)` : ""}
+        </span>
+      </div>
+
+      <div className="finlann-invoice-photo-results__table-wrap">
+        <table className="finlann-invoice-photo-table">
+          <thead>
+            <tr>
+              <th className="finlann-invoice-photo-table__select">Sel.</th>
+              <th>Data</th>
+              <th>Descricao</th>
+              <th>Parc.</th>
+              <th className="finlann-invoice-photo-table__value">Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {parsedItems.map((item) => {
+              const selected = selectedItemKeys.includes(item.key);
+              const likelyDuplicate = likelyDuplicateByKey[item.key];
+              const rowClassName = [
+                selected ? "is-selected" : "",
+                likelyDuplicate ? "is-probable-duplicate" : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
+
+              return (
+                <tr
+                  key={item.key}
+                  className={rowClassName}
+                  onClick={() => toggleSelectItem(item.key)}
+                >
+                  <td className="finlann-invoice-photo-table__select">
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => toggleSelectItem(item.key)}
+                      onClick={(event) => event.stopPropagation()}
+                    />
+                  </td>
+                  <td>{formatDate(item.purchaseDateIso)}</td>
+                  <td
+                    title={`${item.description || "(sem descricao)"} | Foto ${item.pageNumber} / Linha ${item.lineNumber}${
+                      likelyDuplicate
+                        ? ` | Provavel duplicado: ${likelyDuplicate.expenseDescription || "(sem descricao)"}`
+                        : ""
+                    }`}
+                    className="finlann-invoice-photo-table__description"
+                  >
+                    <div className="finlann-invoice-photo-table__description-wrap">
+                      <span className="finlann-invoice-photo-table__description-text">
+                        {item.description || "(sem descricao)"}
+                      </span>
+                      {likelyDuplicate && (
+                        <span className="finlann-invoice-photo-table__duplicate-badge">
+                          Provavel ja lancado
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td>{formatInstallment(item)}</td>
+                  <td className="finlann-invoice-photo-table__value">
+                    {formatMoney(item.installmentAmount)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+
   const panel = (
     <div
       className={
@@ -276,11 +464,17 @@ export default function InvoiceImageImportModal({
         </button>
       )}
 
-      <header className="finlann-invoice-photo-header">
-        <div className="finlann-invoice-photo-brand" aria-label="Finlann">
-          <img src={logoMark} alt="" className="finlann-invoice-photo-brand__logo" />
-          <span className="finlann-invoice-photo-brand__name">Finlann</span>
-        </div>
+      <header
+        className={
+          "finlann-invoice-photo-header" + (asPage ? " finlann-invoice-photo-header--page" : "")
+        }
+      >
+        {!asPage && (
+          <div className="finlann-invoice-photo-brand" aria-label="Finlann">
+            <img src={logoMark} alt="" className="finlann-invoice-photo-brand__logo" />
+            <span className="finlann-invoice-photo-brand__name">Finlann</span>
+          </div>
+        )}
         <h2 className="finlann-invoice-photo-header__title">Importar fatura</h2>
         <p className="finlann-invoice-photo-header__subtitle">Importar itens por foto</p>
       </header>
@@ -444,67 +638,10 @@ export default function InvoiceImageImportModal({
 
         {parseError && <p className="finlann-invoice-photo-error">{parseError}</p>}
 
-        {parsedItems.length > 0 && (
-          <section className="finlann-invoice-photo-results">
-            <div className="finlann-invoice-photo-results__header">
-              <label className="finlann-invoice-photo-results__toggle">
-                <input type="checkbox" checked={allSelected} onChange={handleToggleSelectAll} />
-                <span>{parsedItems.length} itens encontrados</span>
-              </label>
-              <span className="finlann-invoice-photo-results__meta">
-                {parseMeta.pages} foto(s) · {parseMeta.lines} linha(s)
-              </span>
-            </div>
-
-            <div className="finlann-invoice-photo-results__table-wrap">
-              <table className="finlann-invoice-photo-table">
-                <thead>
-                  <tr>
-                    <th className="finlann-invoice-photo-table__select">Sel.</th>
-                    <th>Data</th>
-                    <th>Descricao</th>
-                    <th>Parc.</th>
-                    <th className="finlann-invoice-photo-table__value">Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {parsedItems.map((item) => {
-                    const selected = selectedItemKeys.includes(item.key);
-                    return (
-                      <tr
-                        key={item.key}
-                        className={selected ? "is-selected" : ""}
-                        onClick={() => toggleSelectItem(item.key)}
-                      >
-                        <td className="finlann-invoice-photo-table__select">
-                          <input
-                            type="checkbox"
-                            checked={selected}
-                            onChange={() => toggleSelectItem(item.key)}
-                            onClick={(event) => event.stopPropagation()}
-                          />
-                        </td>
-                        <td>{formatDate(item.purchaseDateIso)}</td>
-                        <td
-                          title={`${item.description || "(sem descricao)"} | Foto ${item.pageNumber} / Linha ${item.lineNumber}`}
-                          className="finlann-invoice-photo-table__description"
-                        >
-                          {item.description || "(sem descricao)"}
-                        </td>
-                        <td>{formatInstallment(item)}</td>
-                        <td className="finlann-invoice-photo-table__value">
-                          {formatMoney(item.installmentAmount)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
+        {parsedItems.length > 0 && resultsSection}
       </div>
 
+      {!asPage && (
       <footer className="finlann-modal__footer finlann-modal__footer--split finlann-invoice-photo-footer">
         <button type="button" className="finlann-modal__secondary" onClick={onClose}>
           Cancelar
@@ -519,11 +656,16 @@ export default function InvoiceImageImportModal({
           <span aria-hidden>→</span>
         </button>
       </footer>
+      )}
     </div>
   );
 
   if (asPage) {
-    return <div className="finlann-invoice-photo-page">{panel}</div>;
+    return (
+      <div className="finlann-invoice-photo-page">
+        {panel}
+      </div>
+    );
   }
 
   return (

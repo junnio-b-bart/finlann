@@ -7,7 +7,7 @@ const DATE_DDMM_RE = /\b(\d{1,2})\s*[\/.-]\s*(\d{1,2})(?:\s*[\/.-]\s*(\d{2,4}))?
 const DATE_DD_MON_RE = /\b(\d{1,2})\s+([A-Za-z]{3,9})(?:\s+(\d{2,4}))?\b/;
 const DAY_START_RE = /^\s*([0-3]?[0-9OoIl]{1,2})\b/;
 const MONEY_RE = /(?:R\$\s*)?-?(?:\d{1,3}(?:[.\s]\d{3})+|\d+)(?:[.,]\d{2})?/gi;
-const INSTALLMENT_SLASH_RE = /\b(\d{1,2})\s*\/\s*(\d{1,2})\b/i;
+const INSTALLMENT_SLASH_RE = /\b(\d{1,2})\s*\/\s*(\d{1,2})\b/gi;
 const INSTALLMENT_TEXT_RE = /\bPARC(?:ELA)?\s*(\d{1,2})\s*(?:DE|\/)\s*(\d{1,2})\b/i;
 
 const IGNORED_KEYWORDS = [
@@ -186,18 +186,7 @@ function parseDateInLine(line, invoiceMonthIndex, invoiceYear) {
   return null;
 }
 
-function parseInstallmentFromLine(line) {
-  const slashMatch = line.match(INSTALLMENT_SLASH_RE);
-  if (slashMatch) {
-    const current = Math.max(1, Number(slashMatch[1]) || 1);
-    const total = Math.max(current, Number(slashMatch[2]) || current);
-    return {
-      installmentNumber: current,
-      totalInstallments: total,
-      token: slashMatch[0],
-    };
-  }
-
+function parseInstallmentFromLine(line, dateToken) {
   const textMatch = line.match(INSTALLMENT_TEXT_RE);
   if (textMatch) {
     const current = Math.max(1, Number(textMatch[1]) || 1);
@@ -206,6 +195,30 @@ function parseInstallmentFromLine(line) {
       installmentNumber: current,
       totalInstallments: total,
       token: textMatch[0],
+    };
+  }
+
+  const normalizedDateToken = normalizeLine(dateToken || "");
+  INSTALLMENT_SLASH_RE.lastIndex = 0;
+  const slashMatches = [...String(line || "").matchAll(INSTALLMENT_SLASH_RE)];
+  for (const slashMatch of slashMatches) {
+    const token = normalizeLine(slashMatch?.[0] || "");
+    if (!token) continue;
+
+    // Avoid reading dates like "15/04" as installments.
+    if (normalizedDateToken && normalizedDateToken.includes(token)) {
+      continue;
+    }
+
+    const current = Math.max(1, Number(slashMatch[1]) || 1);
+    const totalCandidate = Number(slashMatch[2]) || current;
+    if (totalCandidate < current) continue;
+
+    const total = Math.max(current, totalCandidate);
+    return {
+      installmentNumber: current,
+      totalInstallments: total,
+      token: slashMatch[0],
     };
   }
 
@@ -218,7 +231,10 @@ function normalizeDescription(text) {
       .replace(/[\u2022\u00B7\u25AA\u25CF\u25E6]/g, " ")
       .replace(/[<>]/g, " ")
       .replace(/\bR\$\b/gi, " ")
+      .replace(/^[\s/.-]*\d{1,2}\s*[/.-]\s*\d{2,4}\b/g, " ")
+      .replace(/^[\s/.-]*\d{1,2}\s*[/.-]\s*\d{1,2}\s*[/.-]\s*\d{2,4}\b/g, " ")
       .replace(/^[\s\-–—.:|]+/g, " ")
+      .replace(/[\s\-–—.:|]+$/g, " ")
   );
 }
 
@@ -332,7 +348,7 @@ export function extractInvoiceItemsFromLines(
       currentDay = dateInfo.date.getDate();
     }
 
-    const installmentInfo = parseInstallmentFromLine(normalized);
+    const installmentInfo = parseInstallmentFromLine(normalized, dateInfo?.token);
     const moneyMatches = [...normalized.matchAll(MONEY_RE)];
     const hasMoney = moneyMatches.length > 0;
 
